@@ -1,0 +1,19 @@
+/* Needed for bypassing FL's specificity nightmares */
+/*csslint adjoining-classes:false*/
+
+.storylet_favourite.storylet_favourite {
+  border-color: lime;
+}
+
+.fave_toggle_button.fave_toggle_button {
+  float: right;
+  margin-left: -10px;
+  margin-right: 5px;
+  border-color: lime;
+  height: 30px;
+  width: 30px;
+}
+
+.storylet_anchor {
+  display: none;
+}

@@ -1,0 +1,7 @@
+Known issues:
+
+* Can break down if more than ~1200 favourites are saved
+
+Version 0.1
+
+* Initial release

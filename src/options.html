@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chandlery Options</title>
+  <link rel="stylesheet" href="css/options.css">
+  <script src="js/lib/jquery.js"></script>
+  <script src="js/options.js"></script>
+</head>
+
+<body>
+  <p>
+    <a href="#" id="changelogLink">Show changelog</a>
+    <a href="#" id="changelogHideLink" class="changelogHideLink">Hide changelog</a> |
+    <a href="https://github.com/knyar/theoldreader-chrome" class="extlink">Source code &amp; bug tracker</a> |
+    <a href="https://chrome.google.com/webstore/detail/the-old-reader-notifier/flnadglecinohkbmdpeooblldjpaimpo/reviews" class="extlink">Rate in Chrome Web Store</a>
+  </p>
+
+  <hr>
+
+  <div id="optionsContainer" class="container">
+
+    <div class="header">
+      Favourite branch reordering
+    </div>
+
+    <form>
+      <p class="item">
+        <input type="radio" id="branch_no_reorder" name="branch_reorder_mode">
+        <label for="branch_no_reorder">Highlight all, no reordering</label>
+      </p>
+      
+      <p class="item">
+        <input type="radio" id="branch_reorder_active" name="branch_reorder_mode">
+        <label for="branch_reorder_active">Highlight all, float active to the top</label>
+      </p>    
+        
+      <p class="item">
+        <input type="radio" id="branch_reorder_all" name="branch_reorder_mode">
+        <label for="branch_reorder_all">Highlight and float all to the top</label>
+      </p>
+    </form>
+
+  </div>
+
+  <div id="changelogContainer" class="container">
+    <pre id="changelogText" class="changelog"></pre>
+  </div>
+
+</body>
+</html>
