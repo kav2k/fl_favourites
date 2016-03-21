@@ -2,6 +2,11 @@ Known issues:
 
 * Can break down if more than ~1200 favourites are saved
 
+Version 0.1.1
+
+* Fixed links in Options page
+* Apply reorder on script/page load
+
 Version 0.1
 
 * Initial release

@@ -25,7 +25,7 @@ function registerObserver() {
     },
     queries: [{element: ".storylet"}]
   });
-  parseStorylets();
+  parseStorylets(options);
 }
 
 function suicide() {
