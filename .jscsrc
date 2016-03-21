@@ -1,0 +1,16 @@
+{
+  // Base preset:
+  "preset": "google",
+  "esnext": true,
+
+  // Relaxing / changes:
+  "maximumLineLength": null,
+  "validateQuoteMarks": { "mark": "\"", "escape": true },
+
+  // Personal nits:
+  "disallowQuotedKeysInObjects": true,
+  "requireBlocksOnNewline": 1,
+
+  // TODO: Enforce those later
+  "requireCamelCaseOrUpperCaseIdentifiers": null
+}
