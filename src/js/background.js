@@ -1,5 +1,12 @@
 var default_options = {
-  branch_reorder_mode: "branch_reorder_active"
+  branch_reorder_mode: "branch_reorder_active",
+
+  branch_fave_array: [],
+  storylet_fave_array: [],
+  card_protect_array: [],
+  card_discard_array: [],
+
+  storage_schema: 0 // Next one should be 2!
 };
 
 function reinjectContentScripts() {
@@ -23,17 +30,22 @@ function reinjectContentScripts() {
 }
 
 chrome.runtime.onInstalled.addListener(function() {
-  chrome.storage.sync.get(["branch_faves", "branch_fave_array"], function(data) {
-    if (!data.branch_fave_array) {
-      data.branch_fave_array = data.branch_faves || []; // Data migration
-      console.log(data.branch_fave_array);
-
-      chrome.storage.sync.set(data);
-    }
-  });
-
   // Set default options
   chrome.storage.sync.get(default_options, function(data) {
+    switch (data.storage_schema) {
+      case 0:
+        chrome.storage.sync.get(["branch_faves", "branch_fave_array"], function(more_data) {
+          if (more_data.branch_faves) {
+            data.branch_fave_array = more_data.branch_faves;
+            data.storage_schema = 1;
+            chrome.storage.sync.set(data, function() {
+              syncToLocal(reinjectContentScripts);
+            });
+          }
+        });
+        return;
+    }
+
     chrome.storage.sync.set(data, function() {
       syncToLocal(reinjectContentScripts);
     });

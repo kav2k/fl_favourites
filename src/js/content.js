@@ -1,7 +1,11 @@
 var branch_faves = new Set();
+var storylet_faves = new Set();
 var card_protects = new Set();
 var card_discards = new Set();
 var options = {};
+
+/*var protect_timestamps = {};
+var PROTECT_INTERVAL = 2000;*/
 
 var observer;
 
@@ -30,8 +34,10 @@ function registerObserver() {
     },
     queries: [{element: ".storylet"}, {element: ".discard_btn"}]
   });
-  parseStorylets(options);
-  parseCards(options);
+  fillClickHandlers(function() {
+    parseStorylets(options);
+    parseCards(options);
+  });
 }
 
 function suicide() {
@@ -65,11 +71,8 @@ function fillClickHandlers(callback) {
 
 function parseStorylets(storylet_options) {
   var $container = $("#mainContentViaAjax");
-  var $storylets = $("#mainContentViaAjax > .storylet");
-
-  $(".storylet_anchor").remove();
-  var $anchor = $('<div class="storylet_anchor">');
-  $storylets.first().before($anchor);
+  var $branches = $("#mainContentViaAjax > .storylet");
+  var $storylets = $("#mainContentViaAjax .storylet-select");
 
   var reorder_active = false;
   var reorder_locked = false;
@@ -87,39 +90,79 @@ function parseStorylets(storylet_options) {
     }
   }
 
-  $storylets.each(function() {
-    var match = this.id.match(/branch(\d+)/);
-    if (match) {
-      var branchId = parseInt(match[1]);
-      var active = $(this).hasClass("locked");
+  var $faves;
+  var $anchor;
+  $(".storylet_anchor").remove();
 
-      $(this).find(".fave_toggle_button").remove();
+  if ($branches.length) {
+    $anchor = $('<div class="storylet_anchor">');
+    $branches.first().before($anchor);
 
-      var $toggle_button = $('<input type="image" class="fave_toggle_button" title="Playing Favourites: toggle favourite">');
-      $toggle_button.insertAfter($(this).find(".go"));
-      $toggle_button.attr("data-active", active);
-      $toggle_button.attr("data-branch-id", branchId);
-      $toggle_button.click(storyletToggle);
+    $branches.each(function() {
+      var match = this.id.match(/branch(\d+)/);
+      if (match) {
+        var branchId = parseInt(match[1]);
+        var active = $(this).hasClass("locked");
 
-      if (branch_faves.has(branchId)) {
-        $(this).addClass("storylet_favourite");
-        $toggle_button.attr("src", chrome.runtime.getURL("img/button_filled.png"));
-      } else {
-        $(this).removeClass("storylet_favourite");
-        $toggle_button.attr("src", chrome.runtime.getURL("img/button_empty.png"));
+        $(this).find(".fave_toggle_button").remove();
+
+        var $toggle_button = $('<input type="image" class="fave_toggle_button" title="Playing Favourites: toggle favourite">');
+        $toggle_button.insertAfter($(this).find(".go"));
+        $toggle_button.attr("data-active", active);
+        $toggle_button.attr("data-branch-id", branchId);
+        $toggle_button.click(branchToggle);
+
+        if (branch_faves.has(branchId)) {
+          $(this).addClass("storylet_favourite");
+          $toggle_button.attr("src", chrome.runtime.getURL("img/button_filled.png"));
+        } else {
+          $(this).removeClass("storylet_favourite");
+          $toggle_button.attr("src", chrome.runtime.getURL("img/button_empty.png"));
+        }
       }
-    }
-  });
+    });
 
-  var $faves = $storylets.filter(".storylet_favourite");
+    $faves = $branches.filter(".storylet_favourite");
+  } else if ($storylets.length) {
+    $anchor = $('<div class="storylet_anchor">');
+    $storylets.first().before($anchor);
 
-  var $flavour = $container.find(".storylet_flavour_text");
+    $storylets.each(function() {
+      var match;
+      if ($(this).find(".go > input").attr("data-onclick")) {
+        match = $(this).find(".go > input").attr("data-onclick").match(/beginEvent\((\d+)\)/);
+      }
 
-  if (reorder_locked) {
+      if (match) {
+        var storyletId = parseInt(match[1]);
+        var active = $(this).hasClass("locked");
+
+        $(this).find(".fave_toggle_button").remove();
+
+        var $toggle_button = $('<input type="image" class="fave_toggle_button" title="Playing Favourites: toggle favourite">');
+        $toggle_button.insertAfter($(this).find(".go"));
+        $toggle_button.attr("data-active", active);
+        $toggle_button.attr("data-storylet-id", storyletId);
+        $toggle_button.click(storyletToggle);
+
+        if (storylet_faves.has(storyletId)) {
+          $(this).addClass("storylet_favourite");
+          $toggle_button.attr("src", chrome.runtime.getURL("img/button_filled.png"));
+        } else {
+          $(this).removeClass("storylet_favourite");
+          $toggle_button.attr("src", chrome.runtime.getURL("img/button_empty.png"));
+        }
+      }
+    });
+
+    $faves = $storylets.filter(".storylet_favourite");
+  }
+
+  if ($faves && reorder_locked) {
     $faves.filter(".locked").insertAfter($anchor);
   }
 
-  if (reorder_active) {
+  if ($faves && reorder_active) {
     $faves.not(".locked").insertAfter($anchor);
   }
 }
@@ -141,6 +184,7 @@ function parseCards(card_options) {
       $toggle_button.insertAfter($(this));
 
       $toggle_button.attr("data-card-id", cardId);
+      $(this).attr("data-card-id", cardId);
 
       $toggle_button.click(cardToggle);
 
@@ -152,6 +196,10 @@ function parseCards(card_options) {
         $(this).removeClass("card_discard");
         $(this).addClass("card_protect");
         $toggle_button.attr("src", chrome.runtime.getURL("img/card_protect.png"));
+        /*$(this).click(discardProtect);
+        if (protect_timestamps[cardId] && protect_timestamps[cardId] > Date.now() - PROTECT_INTERVAL) {
+          this.value = "  SURE?  ";
+        }*/
       } else {
         $(this).removeClass("card_discard");
         $(this).removeClass("card_protect");
@@ -169,9 +217,10 @@ function loadData(callback) {
   chrome.storage.local.get(
     null,
     function(data) {
-      branch_faves = new Set(data.branch_fave_array || []);
-      card_protects = new Set(data.card_protect_array || []);
-      card_discards = new Set(data.card_discard_array || []);
+      branch_faves = new Set(data.branch_fave_array);
+      storylet_faves = new Set(data.storylet_fave_array);
+      card_protects = new Set(data.card_protect_array);
+      card_discards = new Set(data.card_discard_array);
 
       options.branch_reorder_mode = data.branch_reorder_mode;
 
@@ -180,7 +229,7 @@ function loadData(callback) {
   );
 }
 
-function storyletToggle(e) {
+function branchToggle(e) {
   e.preventDefault();
 
   var branchId = parseInt(this.dataset.branchId);
@@ -189,6 +238,18 @@ function storyletToggle(e) {
     removeBranchFave(branchId);
   } else {
     addBranchFave(branchId);
+  }
+}
+
+function storyletToggle(e) {
+  e.preventDefault();
+
+  var storyletId = parseInt(this.dataset.storyletId);
+
+  if (storylet_faves.has(storyletId)) {
+    removeStoryletFave(storyletId);
+  } else {
+    addStoryletFave(storyletId);
   }
 }
 
@@ -211,13 +272,40 @@ function cardToggle(e) {
   }*/
 }
 
+/*function discardProtect(e) {
+  var cardId = parseInt(this.dataset.cardId);
+
+  function revertDiscard(cardId) {
+    return function() {
+      $(".discard_btn[data-card-id=" + cardId + "]").attr("value", "DISCARD");
+      protect_timestamps.delete(cardId);
+    };
+  }
+
+  if (card_protects.has(cardId)) {
+    if (protect_timestamps[cardId] && protect_timestamps[cardId] > Date.now() - PROTECT_INTERVAL) {
+      return;
+    } else {
+      e.preventDefault();
+      this.value = "  SURE?  ";
+      protect_timestamps[cardId] = Date.now();
+      setTimeout(PROTECT_INTERVAL, revertDiscard(cardId));
+    }
+  }
+}*/
+
 function saveFaves(callback) {
   var branch_fave_array = [];
+  var storylet_fave_array = [];
   var card_protect_array = [];
   var card_discard_array = [];
+
   var key;
   for (key of branch_faves.keys()) {
     branch_fave_array.push(key);
+  }
+  for (key of storylet_faves.keys()) {
+    storylet_fave_array.push(key);
   }
   for (key of card_protects.keys()) {
     card_protect_array.push(key);
@@ -225,9 +313,11 @@ function saveFaves(callback) {
   for (key of card_discards.keys()) {
     card_discard_array.push(key);
   }
+
   chrome.storage.local.set(
     {
       branch_fave_array: branch_fave_array,
+      storylet_fave_array: storylet_fave_array,
       card_protect_array: card_protect_array,
       card_discard_array: card_discard_array
     }, function() {
@@ -243,6 +333,16 @@ function addBranchFave(branchId) {
 
 function removeBranchFave(branchId) {
   branch_faves.delete(branchId);
+  saveFaves(parseStorylets);
+}
+
+function addStoryletFave(storyletId) {
+  storylet_faves.add(storyletId);
+  saveFaves(parseStorylets);
+}
+
+function removeStoryletFave(storyletId) {
+  storylet_faves.delete(storyletId);
   saveFaves(parseStorylets);
 }
 

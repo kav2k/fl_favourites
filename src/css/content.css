@@ -1,7 +1,7 @@
 /* Needed for bypassing FL's specificity nightmares */
 /*csslint adjoining-classes:false*/
 
-.storylet_favourite.storylet_favourite {
+.storylet_favourite.storylet_favourite.storylet_favourite {
   border-color: lime;
 }
 
