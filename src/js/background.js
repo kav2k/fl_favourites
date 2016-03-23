@@ -23,6 +23,15 @@ function reinjectContentScripts() {
 }
 
 chrome.runtime.onInstalled.addListener(function() {
+  chrome.storage.sync.get(["branch_faves", "branch_fave_array"], function(data) {
+    if (!data.branch_fave_array) {
+      data.branch_fave_array = data.branch_faves || []; // Data migration
+      console.log(data.branch_fave_array);
+
+      chrome.storage.sync.set(data);
+    }
+  });
+
   // Set default options
   chrome.storage.sync.get(default_options, function(data) {
     chrome.storage.sync.set(data, function() {

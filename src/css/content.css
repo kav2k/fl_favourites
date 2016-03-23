@@ -9,11 +9,26 @@
   float: right;
   margin-left: -10px;
   margin-right: 5px;
-  border-color: lime;
   height: 30px;
   width: 30px;
 }
 
 .storylet_anchor {
   display: none;
+}
+
+.card_toggle_button.card_toggle_button {
+  height: 16px;
+  width: 16px;
+  position: absolute;
+  bottom: -30px;
+  left: 80px;
+}
+
+.card_discard.card_discard, .card_discard.card_discard:hover {
+  border-color: lime;
+}
+
+.card_protect.card_protect, .card_protect.card_protect:hover {
+  border-color: red;
 }
