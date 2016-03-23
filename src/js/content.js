@@ -128,7 +128,10 @@ function parseCards(card_options) {
   var $discards = $("#mainContentViaAjax .discard_btn");
 
   $discards.each(function() {
-    var match = this.dataset.onclick.match(/eventid=(\d+)/);
+    var match;
+    if (this.dataset.onclick) {
+      match = this.dataset.onclick.match(/eventid=(\d+)/);
+    }
 
     if (match) {
       var cardId = parseInt(match[1]);
