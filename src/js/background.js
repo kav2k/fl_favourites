@@ -10,9 +10,13 @@ function reinjectContentScripts() {
   ];
 
   chrome.tabs.query({url: "*://fallenlondon.storynexus.com/Gap/Load*"}, function(tabs) {
+    function silence() {
+      if (chrome.runtime.lastError) { /* silence access errors */ }
+    }
+
     tabs.forEach(function(tab) {
       for (var file of contentScripts) {
-        chrome.tabs.executeScript(tab.id, {file: file});
+        chrome.tabs.executeScript(tab.id, {file: file}, silence);
       }
     });
   });
