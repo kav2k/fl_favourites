@@ -106,6 +106,8 @@ function parseStorylets(storylet_options) {
 
         $(this).find(".fave_toggle_button").remove();
 
+        if ($(this).find(".go").prop("offsetParent") === null) { return; } // Fix for Protector extensions
+
         var $toggle_button = $('<input type="image" class="fave_toggle_button" title="Playing Favourites: toggle favourite">');
         $toggle_button.insertAfter($(this).find(".go"));
         $toggle_button.attr("data-active", active);
@@ -138,6 +140,8 @@ function parseStorylets(storylet_options) {
         var active = $(this).hasClass("locked");
 
         $(this).find(".fave_toggle_button").remove();
+
+        if ($(this).find(".go").prop("offsetParent") === null) { return; } // Fix for Protector extensions
 
         var $toggle_button = $('<input type="image" class="fave_toggle_button" title="Playing Favourites: toggle favourite">');
         $toggle_button.insertAfter($(this).find(".go"));
@@ -180,6 +184,9 @@ function parseCards(card_options) {
       var cardId = parseInt(match[1]);
 
       $(this).next(".card_toggle_button").remove();
+
+      if (this.offsetParent === null) { return; } // Fix for Protector extensions
+
       var $toggle_button = $('<input type="image" class="card_toggle_button" title="Playing Favourites: toggle favourite">');
       $toggle_button.insertAfter($(this));
 
