@@ -2,6 +2,10 @@ Known issues:
 
 * Can break down if more than ~1200 favourites are saved
 
+Version 0.2
+
+* Added support for cards (green/red) and storylets
+
 Version 0.1.1
 
 * Fixed links in Options page
