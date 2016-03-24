@@ -2,9 +2,10 @@ Known issues:
 
 * Can break down if more than ~1200 favourites are saved
 
-Version 0.2
+Version 0.2.1
 
 * Added support for cards (green/red) and storylets
+* Improved reinjection on reload
 
 Version 0.1.1
 
