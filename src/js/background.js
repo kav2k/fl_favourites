@@ -10,6 +10,9 @@ var default_options = {
 };
 
 function reinjectContentScripts() {
+  var stylesheets = [
+    "css/content.css"
+  ];
   var contentScripts = [
     "js/lib/jquery.js",
     "js/lib/mutation-summary.js",
@@ -22,7 +25,11 @@ function reinjectContentScripts() {
     }
 
     tabs.forEach(function(tab) {
-      for (var file of contentScripts) {
+      var file;
+      for (file of stylesheets) {
+        chrome.tabs.insertCSS(tab.id, {file: file}, silence);
+      }
+      for (file of contentScripts) {
         chrome.tabs.executeScript(tab.id, {file: file}, silence);
       }
     });
