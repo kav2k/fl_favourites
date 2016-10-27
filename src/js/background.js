@@ -30,7 +30,7 @@ function reinjectContentScripts() {
         chrome.tabs.insertCSS(tab.id, {file: file}, silence);
       }
       for (file of contentScripts) {
-        chrome.tabs.executeScript(tab.id, {file: file}, silence);
+        chrome.tabs.executeScript(tab.id, {file: file, runAt: "document_end"}, silence);
       }
     });
   });
