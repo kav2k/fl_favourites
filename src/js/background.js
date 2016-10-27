@@ -38,16 +38,22 @@ function reinjectContentScripts() {
   });
 }
 
-chrome.runtime.onInstalled.addListener(function() {
-  // Set default options
-  chrome.storage.sync.get(default_options, function(data) {
+if (chrome.runtime.onInstalled) {
+  chrome.runtime.onInstalled.addListener(init);
+} else { // Jeez, Firefox, really? NOT IMPLEMENTED https://bugzilla.mozilla.org/show_bug.cgi?id=1252871
+  init(true);
+}
+
+function init(avoidSync = false) {
+  const storage = (avoidSync) ? chrome.storage.local : chrome.storage.sync;
+  storage.get(default_options, function(data) {
     switch (data.storage_schema) {
       case 0:
-        chrome.storage.sync.get(["branch_faves", "branch_fave_array"], function(more_data) {
+        storage.get(["branch_faves", "branch_fave_array"], function(more_data) {
           if (more_data.branch_faves) {
             data.branch_fave_array = more_data.branch_faves;
             data.storage_schema = 1;
-            chrome.storage.sync.set(data, function() {
+            storage.set(data, function() {
               syncToLocal(reinjectContentScripts);
             });
           }
@@ -55,17 +61,23 @@ chrome.runtime.onInstalled.addListener(function() {
         return;
     }
 
-    chrome.storage.sync.set(data, function() {
+    storage.set(data, function() {
       syncToLocal(reinjectContentScripts);
     });
   });
-});
+}
+
 // Dealing with chrome.storage.sync rate limiting
 var SYNC_PERIOD = 1000 * 3; // 3 seconds is safe for both syncing and event page lifetime
 var syncTimeout;
 var syncTS = 0;
 
 function syncToLocal(callback) {
+  if (!chrome.storage.sync) { // Firefox: NOT IMPLEMENTED https://bugzilla.mozilla.org/show_bug.cgi?id=1220494
+    if (callback) { callback(); }
+    return;
+  }
+
   chrome.storage.sync.get(null, function(data) {
     chrome.storage.local.set(data, function() {
       if (callback) { callback(); }
@@ -74,6 +86,11 @@ function syncToLocal(callback) {
 }
 
 function localToSync(callback) {
+  if (!chrome.storage.sync) { // Firefox: NOT IMPLEMENTED https://bugzilla.mozilla.org/show_bug.cgi?id=1220494
+    if (callback) { callback(); }
+    return;
+  }
+  
   // Set time of last sync write for rate limiting
   syncTS = Date.now();
   clearTimeout(syncTimeout);
