@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Chandlery Options</title>
+  <title>Favourites for Fallen London Options</title>
   <link rel="stylesheet" href="css/options.css">
   <script src="js/lib/jquery.js"></script>
   <script src="js/options.js"></script>
@@ -20,24 +20,50 @@
   <div id="optionsContainer" class="container">
 
     <div class="header">
-      Favourite branch reordering
+      Branch/storylet reordering
     </div>
 
     <form>
       <p class="item">
-        <input type="radio" id="branch_no_reorder" name="branch_reorder_mode">
-        <label for="branch_no_reorder">Highlight all, no reordering</label>
+        <label>
+          <input type="radio" value="branch_no_reorder" name="branch_reorder_mode">
+          Highlight all, no reordering
+        </label>
       </p>
       
       <p class="item">
-        <input type="radio" id="branch_reorder_active" name="branch_reorder_mode">
-        <label for="branch_reorder_active">Highlight all, float active to the top</label>
+        <label>
+          <input type="radio" value="branch_reorder_active" name="branch_reorder_mode">
+          Highlight all, float active to the top/bottom
+        </label>
       </p>    
         
       <p class="item">
-        <input type="radio" id="branch_reorder_all" name="branch_reorder_mode">
-        <label for="branch_reorder_all">Highlight and float all to the top</label>
+        <input type="radio" value="branch_reorder_all" name="branch_reorder_mode">
+        <label>
+          Highlight and float all to the top/bottom
+        </label>
       </p>
+    </form>
+
+    <div class="header">
+      Click mode
+    </div>
+
+    <form>
+      <p class="item">
+        <label>
+          <input type="radio" value="click_through" name="switch_mode">
+          Click through: Favourite → Avoid → Neutral
+        </label>
+      </p>
+      
+      <p class="item">
+        <label>
+          <input type="radio" value="modifier_click" name="switch_mode">
+          Click to set Favourite, Ctrl+Click to set Avoid
+        </label>
+      </p>    
     </form>
 
   </div>

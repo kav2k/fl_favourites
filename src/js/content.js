@@ -27,16 +27,16 @@ function registerObserver() {
     callback: function(summaries) {
       summaries.forEach(function(summary) {
         fillClickHandlers(function() {
-          parseStorylets(options);
-          parseCards(options);
+          parseStorylets(true);
+          parseCards();
         });
       });
     },
     queries: [{element: ".storylet"}, {element: ".discard_btn"}]
   });
   fillClickHandlers(function() {
-    parseStorylets(options);
-    parseCards(options);
+    parseStorylets(true);
+    parseCards();
   });
 }
 
@@ -69,15 +69,15 @@ function fillClickHandlers(callback) {
   callback();
 }
 
-function parseStorylets(storylet_options) {
+function parseStorylets(reorder = false) { // Call without options to ensure no reordering
   var $container = $("#mainContentViaAjax");
   var $branches = $("#mainContentViaAjax > .storylet");
   var $storylets = $("#mainContentViaAjax .storylet-select");
 
   var reorder_active = false;
   var reorder_locked = false;
-  if (storylet_options) {
-    switch (storylet_options.branch_reorder_mode) {
+  if (reorder) {
+    switch (options.branch_reorder_mode) {
       case "branch_no_reorder":
         break;
       case "branch_reorder_active":
@@ -171,23 +171,23 @@ function parseStorylets(storylet_options) {
   }
 }
 
-function parseCards(card_options) {
-  var $discards = $("#mainContentViaAjax .discard_btn");
+function parseCards() {
+  let $discards = $("#mainContentViaAjax .discard_btn");
 
   $discards.each(function() {
-    var match;
+    let match;
     if (this.dataset.onclick) {
       match = this.dataset.onclick.match(/eventid=(\d+)/);
     }
 
     if (match) {
-      var cardId = parseInt(match[1]);
+      const cardId = parseInt(match[1]);
 
       $(this).next(".card_toggle_button").remove();
 
       if (this.offsetParent === null) { return; } // Fix for Protector extensions
 
-      var $toggle_button = $('<input type="image" class="card_toggle_button" title="Playing Favourites: toggle favourite">');
+      let $toggle_button = $('<input type="image" class="card_toggle_button" title="Playing Favourites: toggle favourite">');
       $toggle_button.insertAfter($(this));
 
       $toggle_button.attr("data-card-id", cardId);
@@ -230,6 +230,7 @@ function loadData(callback) {
       card_discards = new Set(data.card_discard_array);
 
       options.branch_reorder_mode = data.branch_reorder_mode;
+      options.switch_mode = data.switch_mode;
 
       if (callback) { callback(); }
     }
@@ -239,7 +240,7 @@ function loadData(callback) {
 function branchToggle(e) {
   e.preventDefault();
 
-  var branchId = parseInt(this.dataset.branchId);
+  const branchId = parseInt(this.dataset.branchId);
 
   if (branch_faves.has(branchId)) {
     removeBranchFave(branchId);
@@ -251,7 +252,7 @@ function branchToggle(e) {
 function storyletToggle(e) {
   e.preventDefault();
 
-  var storyletId = parseInt(this.dataset.storyletId);
+  const storyletId = parseInt(this.dataset.storyletId);
 
   if (storylet_faves.has(storyletId)) {
     removeStoryletFave(storyletId);
@@ -263,20 +264,35 @@ function storyletToggle(e) {
 function cardToggle(e) {
   e.preventDefault();
 
-  var cardId = parseInt(this.dataset.cardId);
+  const cardId = parseInt(this.dataset.cardId);
 
-  if (card_discards.has(cardId)) {
-    setCardFave(cardId, "protect");
-  } else if (card_protects.has(cardId)) {
-    setCardFave(cardId, "none");
-  } else {
-    setCardFave(cardId, "discard");
+  switch (options.switch_mode) {
+    case "modifier_click":
+      const modifier = (e.metaKey || e.ctrlKey);
+      if (modifier) {
+        if (card_protects.has(cardId)) {
+          setCardFave(cardId, "none");
+        } else {
+          setCardFave(cardId, "protect");
+        }
+      } else {
+        if (card_discards.has(cardId)) {
+          setCardFave(cardId, "none");
+        } else {
+          setCardFave(cardId, "discard");
+        }
+      }
+      break;
+    case "click_through":
+      if (card_discards.has(cardId)) {
+        setCardFave(cardId, "protect");
+      } else if (card_protects.has(cardId)) {
+        setCardFave(cardId, "none");
+      } else {
+        setCardFave(cardId, "discard");
+      }
+      break;
   }
-  /*if (card_faves.has(branchId)) {
-    removeFave(branchId);
-  } else {
-    addFave(branchId);
-  }*/
 }
 
 /*function discardProtect(e) {

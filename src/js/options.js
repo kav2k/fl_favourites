@@ -1,26 +1,14 @@
 $(document).ready(function() {
-  /*$("input[type=checkbox]").each(function() {
-    var el = this;
-    chrome.storage.local.get(el.id, function(data) {
-      console.log("Load: ", data);
-      el.checked = data[el.id];
-    });
-  }).change(function() {
-    var data = {};
-        data[this.id] = this.checked;
-    console.log("Save: ", data);
-    chrome.storage.local.set(data);
-  });*/
   $("input[type=radio]").each(function() {
     var el = this;
     chrome.storage.local.get(el.name, function(data) {
       console.log("Load: ", data);
-      el.checked = (data[el.name] === el.id);
+      el.checked = (data[el.name] === el.value);
     });
   }).change(function() {
     var data = {};
     if (this.checked) {
-      data[this.name] = this.id;
+      data[this.name] = this.value;
     }
     console.log("Save: ", data);
     chrome.storage.local.set(data);
@@ -28,13 +16,13 @@ $(document).ready(function() {
 
   $("input[type=checkbox]").each(function() {
     var el = this;
-    chrome.storage.local.get(el.id, function(data) {
+    chrome.storage.local.get(el.value, function(data) {
       console.log("Load: ", data);
-      el.checked = data[el.id];
+      el.checked = data[el.value];
     });
   }).change(function() {
     var data = {};
-    data[this.id] = this.checked;
+    data[this.value] = this.checked;
     console.log("Save: ", data);
     chrome.storage.local.set(data);
   });

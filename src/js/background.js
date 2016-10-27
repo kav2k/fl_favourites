@@ -1,14 +1,16 @@
 var default_options = {
   branch_reorder_mode: "branch_reorder_active",
+  switch_mode: "click_through",
 
   branch_fave_array: [],
   storylet_fave_array: [],
   card_protect_array: [],
   card_discard_array: [],
 
-  storage_schema: 0 // Next one should be 2!
+  storage_schema: 1
 };
 
+// Inject into open tabs on launch
 function reinjectContentScripts() {
   var stylesheets = [
     "css/content.css"
@@ -58,6 +60,10 @@ chrome.runtime.onInstalled.addListener(function() {
     });
   });
 });
+// Dealing with chrome.storage.sync rate limiting
+var SYNC_PERIOD = 1000 * 3; // 3 seconds is safe for both syncing and event page lifetime
+var syncTimeout;
+var syncTS = 0;
 
 function syncToLocal(callback) {
   chrome.storage.sync.get(null, function(data) {
@@ -68,8 +74,10 @@ function syncToLocal(callback) {
 }
 
 function localToSync(callback) {
+  // Set time of last sync write for rate limiting
   syncTS = Date.now();
   clearTimeout(syncTimeout);
+
   chrome.storage.local.get(null, function(data) {
     chrome.storage.sync.set(data, function() {
       if (chrome.runtime.lastError) {
@@ -80,19 +88,15 @@ function localToSync(callback) {
   });
 }
 
-var SYNC_PERIOD = 1000 * 3; // 3 seconds is safe for both syncing and event page lifetime
-var syncTimeout;
-var syncTS = 0;
-
 chrome.storage.onChanged.addListener(function(changes, area) {
-  if (area === "local") {
+  if (area === "local") { // Changes to local values, must commit to sync
     if (Date.now() - syncTS > SYNC_PERIOD) {
       localToSync();
-    } else {
+    } else { // Schedule a write SYNC_PERIOD after last sync write
       clearTimeout(syncTimeout);
       syncTimeout = setTimeout(localToSync, SYNC_PERIOD - (Date.now() - syncTS));
     }
-  } else {
+  } else { // Changes coming from sync, must commit to local
     syncToLocal();
   }
 });
