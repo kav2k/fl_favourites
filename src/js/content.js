@@ -1,5 +1,7 @@
 var branch_faves = new Set();
+var branch_avoids = new Set();
 var storylet_faves = new Set();
+var storylet_avoids = new Set();
 var card_protects = new Set();
 var card_discards = new Set();
 var options = {};
@@ -95,12 +97,16 @@ function parseStorylets(reorder = false) { // Call without options to ensure no 
   }
 
   let $faves;
-  let $anchor;
-  $(".storylet_anchor").remove();
+  let $avoids;
+
+  let $first;
+  let $last_active;
+  let $last;
 
   if ($branches.length) {
-    $anchor = $('<div class="storylet_anchor">');
-    $branches.first().before($anchor);
+    $first = $branches.first();
+    $last_active = $branches.not(".locked").last();
+    $last = $branches.last();
 
     $branches.each(function() {
       let match = this.id.match(/branch(\d+)/);
@@ -120,18 +126,26 @@ function parseStorylets(reorder = false) { // Call without options to ensure no 
 
         if (branch_faves.has(branchId)) {
           $(this).addClass("storylet_favourite");
+          $(this).removeClass("storylet_avoid");
           $toggle_button.attr("src", chrome.runtime.getURL("img/button_filled.png"));
+        } else if (branch_avoids.has(branchId)) {
+          $(this).removeClass("storylet_favourite");
+          $(this).addClass("storylet_avoid");
+          $toggle_button.attr("src", chrome.runtime.getURL("img/button_avoid.png"));
         } else {
           $(this).removeClass("storylet_favourite");
+          $(this).removeClass("storylet_avoid");
           $toggle_button.attr("src", chrome.runtime.getURL("img/button_empty.png"));
         }
       }
     });
 
     $faves = $branches.filter(".storylet_favourite");
+    $avoids = $branches.filter(".storylet_avoid");
   } else if ($storylets.length) {
-    $anchor = $('<div class="storylet_anchor">');
-    $storylets.first().before($anchor);
+    $first = $storylets.first();
+    $last_active = $storylets.not(".locked").last();
+    $last = $storylets.last();
 
     $storylets.each(function() {
       let match;
@@ -155,23 +169,48 @@ function parseStorylets(reorder = false) { // Call without options to ensure no 
 
         if (storylet_faves.has(storyletId)) {
           $(this).addClass("storylet_favourite");
+          $(this).removeClass("storylet_avoid");
           $toggle_button.attr("src", chrome.runtime.getURL("img/button_filled.png"));
+        } else if (storylet_avoids.has(storyletId)) {
+          $(this).removeClass("storylet_favourite");
+          $(this).addClass("storylet_avoid");
+          $toggle_button.attr("src", chrome.runtime.getURL("img/button_avoid.png"));
         } else {
           $(this).removeClass("storylet_favourite");
+          $(this).removeClass("storylet_avoid");
           $toggle_button.attr("src", chrome.runtime.getURL("img/button_empty.png"));
         }
       }
     });
 
     $faves = $storylets.filter(".storylet_favourite");
+    $avoids = $storylets.filter(".storylet_avoid");
   }
 
-  if ($faves && reorder_locked) {
-    $faves.filter(".locked").insertAfter($anchor);
+  if ($faves && $faves.length) {
+    if (reorder_locked) {
+      $faves.filter(".locked").insertBefore($first);
+    }
+    if (reorder_active) {
+      $faves.not(".locked").insertBefore($first);
+    }
   }
 
-  if ($faves && reorder_active) {
-    $faves.not(".locked").insertAfter($anchor);
+  if ($avoids && $avoids.length) {
+    if (reorder_locked) {
+      if ($last_active.length) {
+        $avoids.filter(".locked").insertAfter($last_active);
+      } else {
+        $avoids.filter(".locked").insertBefore($last);
+      }
+    }
+    if (reorder_active) {
+      if ($last_active.length) {
+        $avoids.not(".locked").insertAfter($last_active);
+      } else {
+        $avoids.not(".locked").insertBefore($last);
+      }
+    }
   }
 }
 
@@ -225,7 +264,9 @@ function loadData(callback) {
     null,
     function(data) {
       branch_faves = unpackSet(data, "branch_faves");
+      branch_avoids = unpackSet(data, "branch_avoids");
       storylet_faves = unpackSet(data, "storylet_faves");
+      storylet_avoids = unpackSet(data, "storylet_avoids");
       card_protects = unpackSet(data, "card_protects");
       card_discards = unpackSet(data, "card_discards");
 
@@ -242,10 +283,32 @@ function branchToggle(e) {
 
   const branchId = parseInt(this.dataset.branchId);
 
-  if (branch_faves.has(branchId)) {
-    removeBranchFave(branchId);
-  } else {
-    addBranchFave(branchId);
+  switch (options.switch_mode) {
+    case "modifier_click":
+      const modifier = (e.metaKey || e.ctrlKey);
+      if (modifier) {
+        if (branch_avoids.has(branchId)) {
+          setBranchFave(branchId, "none");
+        } else {
+          setBranchFave(branchId, "avoid");
+        }
+      } else {
+        if (branch_faves.has(branchId)) {
+          setBranchFave(branchId, "none");
+        } else {
+          setBranchFave(branchId, "fave");
+        }
+      }
+      break;
+    case "click_through":
+      if (branch_faves.has(branchId)) {
+        setBranchFave(branchId, "avoid");
+      } else if (branch_avoids.has(branchId)) {
+        setBranchFave(branchId, "none");
+      } else {
+        setBranchFave(branchId, "fave");
+      }
+      break;
   }
 }
 
@@ -254,10 +317,32 @@ function storyletToggle(e) {
 
   const storyletId = parseInt(this.dataset.storyletId);
 
-  if (storylet_faves.has(storyletId)) {
-    removeStoryletFave(storyletId);
-  } else {
-    addStoryletFave(storyletId);
+  switch (options.switch_mode) {
+    case "modifier_click":
+      const modifier = (e.metaKey || e.ctrlKey);
+      if (modifier) {
+        if (storylet_avoids.has(storyletId)) {
+          setStoryletFave(storyletId, "none");
+        } else {
+          setStoryletFave(storyletId, "avoid");
+        }
+      } else {
+        if (storylet_faves.has(storyletId)) {
+          setStoryletFave(storyletId, "none");
+        } else {
+          setStoryletFave(storyletId, "fave");
+        }
+      }
+      break;
+    case "click_through":
+      if (storylet_faves.has(storyletId)) {
+        setStoryletFave(storyletId, "avoid");
+      } else if (storylet_avoids.has(storyletId)) {
+        setStoryletFave(storyletId, "none");
+      } else {
+        setStoryletFave(storyletId, "fave");
+      }
+      break;
   }
 }
 
@@ -299,7 +384,9 @@ function saveFaves(callback) {
   let data = {};
 
   Object.assign(data, branch_faves.pack("branch_faves"));
+  Object.assign(data, branch_avoids.pack("branch_avoids"));
   Object.assign(data, storylet_faves.pack("storylet_faves"));
+  Object.assign(data, storylet_avoids.pack("storylet_avoids"));
   Object.assign(data, card_protects.pack("card_protects"));
   Object.assign(data, card_discards.pack("card_discards"));
 
@@ -308,23 +395,39 @@ function saveFaves(callback) {
   });
 }
 
-function addBranchFave(branchId) {
-  branch_faves.add(branchId);
+function setBranchFave(branchId, mode) {
+  switch (mode) {
+    case "none":
+      branch_faves.delete(branchId);
+      branch_avoids.delete(branchId);
+      break;
+    case "avoid":
+      branch_faves.delete(branchId);
+      branch_avoids.add(branchId);
+      break;
+    case "fave":
+      branch_faves.add(branchId);
+      branch_avoids.delete(branchId);
+      break;
+  }
   saveFaves(parseStorylets);
 }
 
-function removeBranchFave(branchId) {
-  branch_faves.delete(branchId);
-  saveFaves(parseStorylets);
-}
-
-function addStoryletFave(storyletId) {
-  storylet_faves.add(storyletId);
-  saveFaves(parseStorylets);
-}
-
-function removeStoryletFave(storyletId) {
-  storylet_faves.delete(storyletId);
+function setStoryletFave(storyletId, mode) {
+  switch (mode) {
+    case "none":
+      storylet_faves.delete(storyletId);
+      storylet_avoids.delete(storyletId);
+      break;
+    case "avoid":
+      storylet_faves.delete(storyletId);
+      storylet_avoids.add(storyletId);
+      break;
+    case "fave":
+      storylet_faves.add(storyletId);
+      storylet_avoids.delete(storyletId);
+      break;
+  }
   saveFaves(parseStorylets);
 }
 

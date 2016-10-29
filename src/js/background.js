@@ -3,7 +3,9 @@ var default_options = {
   switch_mode: "click_through",
 
   branch_faves_keys: [],
+  branch_avoids_keys: [],
   storylet_faves_keys: [],
+  storylet_avoids_keys: [],
   card_protects_keys: [],
   card_discards_keys: [],
 

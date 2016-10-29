@@ -5,6 +5,10 @@
   border-color: lime;
 }
 
+.storylet_avoid.storylet_avoid.storylet_avoid {
+  border-color: red;
+}
+
 .fave_toggle_button.fave_toggle_button {
   float: right;
   margin-left: -10px;
