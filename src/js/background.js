@@ -12,10 +12,10 @@ var default_options = {
 
 // Inject into open tabs on launch
 function reinjectContentScripts() {
-  var stylesheets = [
+  let stylesheets = [
     "css/content.css"
   ];
-  var contentScripts = [
+  let contentScripts = [
     "js/lib/jquery.js",
     "js/lib/mutation-summary.js",
     "js/set_pack.js",
@@ -28,11 +28,10 @@ function reinjectContentScripts() {
     }
 
     tabs.forEach(function(tab) {
-      var file;
-      for (file of stylesheets) {
+      for (let file of stylesheets) {
         chrome.tabs.insertCSS(tab.id, {file: file}, silence);
       }
-      for (file of contentScripts) {
+      for (let file of contentScripts) {
         chrome.tabs.executeScript(tab.id, {file: file, runAt: "document_end"}, silence);
       }
     });
@@ -85,7 +84,7 @@ function init(avoidSync = false) {
 }
 
 // Dealing with chrome.storage.sync rate limiting
-var SYNC_PERIOD = 1000 * 3; // 3 seconds is safe for both syncing and event page lifetime
+const SYNC_PERIOD = 1000 * 3; // 3 seconds is safe for both syncing and event page lifetime
 var syncTimeout;
 var syncTS = 0;
 

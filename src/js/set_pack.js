@@ -1,4 +1,4 @@
-var MAX_MAP_ITEMS_PER_KEY = 512;
+const MAX_MAP_ITEMS_PER_KEY = 512;
 
 Set.prototype.pack = function(storage_key) {
   let source = Array.from(this).sort();

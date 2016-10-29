@@ -10,6 +10,7 @@ var PROTECT_INTERVAL = 2000;*/
 var observer;
 
 loadData(registerObserver);
+chrome.storage.onChanged.addListener(onStorageChange);
 
 var event = new CustomEvent("PlayingFavouritesLoad");
 window.dispatchEvent(event);
@@ -40,15 +41,17 @@ function registerObserver() {
   });
 }
 
+// Gracefully shut down orphaned instance
 function suicide() {
   console.warn("Playing Favourites " + version + " content script orphaned");
   observer.disconnect();
   window.removeEventListener("PlayingFavouritesLoad", suicide);
+  chrome.storage.onChanged.removeListener(onStorageChange);
 }
 
 // Make inline click/submit handlers visible to the isolated world
 function fillClickHandlers(callback) {
-  var injected = function() {
+  let injected = function() {
     // Note: This executes in another context!
     // Note: This assumes jQuery in the other context!
     $("[onclick]").each(function() {
@@ -62,7 +65,8 @@ function fillClickHandlers(callback) {
     });
   };
 
-  var s = document.createElement("script");
+  // Inject into the page context
+  let s = document.createElement("script");
   s.textContent = "(" + injected + ")();";
   (document.head || document.documentElement).appendChild(s);
   s.parentNode.removeChild(s);
@@ -70,12 +74,12 @@ function fillClickHandlers(callback) {
 }
 
 function parseStorylets(reorder = false) { // Call without options to ensure no reordering
-  var $container = $("#mainContentViaAjax");
-  var $branches = $("#mainContentViaAjax > .storylet");
-  var $storylets = $("#mainContentViaAjax .storylet-select");
+  let $container = $("#mainContentViaAjax");
+  let $branches = $("#mainContentViaAjax > .storylet");
+  let $storylets = $("#mainContentViaAjax .storylet-select");
 
-  var reorder_active = false;
-  var reorder_locked = false;
+  let reorder_active = false;
+  let reorder_locked = false;
   if (reorder) {
     switch (options.branch_reorder_mode) {
       case "branch_no_reorder":
@@ -90,8 +94,8 @@ function parseStorylets(reorder = false) { // Call without options to ensure no 
     }
   }
 
-  var $faves;
-  var $anchor;
+  let $faves;
+  let $anchor;
   $(".storylet_anchor").remove();
 
   if ($branches.length) {
@@ -99,16 +103,16 @@ function parseStorylets(reorder = false) { // Call without options to ensure no 
     $branches.first().before($anchor);
 
     $branches.each(function() {
-      var match = this.id.match(/branch(\d+)/);
+      let match = this.id.match(/branch(\d+)/);
       if (match) {
-        var branchId = parseInt(match[1]);
-        var active = $(this).hasClass("locked");
+        const branchId = parseInt(match[1]);
+        const active = $(this).hasClass("locked");
 
         $(this).find(".fave_toggle_button").remove();
 
         if ($(this).find(".go").prop("offsetParent") === null) { return; } // Fix for Protector extensions
 
-        var $toggle_button = $('<input type="image" class="fave_toggle_button" title="Playing Favourites: toggle favourite">');
+        let $toggle_button = $('<input type="image" class="fave_toggle_button" title="Playing Favourites: toggle favourite">');
         $toggle_button.insertAfter($(this).find(".go"));
         $toggle_button.attr("data-active", active);
         $toggle_button.attr("data-branch-id", branchId);
@@ -130,20 +134,20 @@ function parseStorylets(reorder = false) { // Call without options to ensure no 
     $storylets.first().before($anchor);
 
     $storylets.each(function() {
-      var match;
+      let match;
       if ($(this).find(".go > input").attr("data-onclick")) {
         match = $(this).find(".go > input").attr("data-onclick").match(/beginEvent\((\d+)\)/);
       }
 
       if (match) {
-        var storyletId = parseInt(match[1]);
-        var active = $(this).hasClass("locked");
+        const storyletId = parseInt(match[1]);
+        const active = $(this).hasClass("locked");
 
         $(this).find(".fave_toggle_button").remove();
 
         if ($(this).find(".go").prop("offsetParent") === null) { return; } // Fix for Protector extensions
 
-        var $toggle_button = $('<input type="image" class="fave_toggle_button" title="Playing Favourites: toggle favourite">');
+        let $toggle_button = $('<input type="image" class="fave_toggle_button" title="Playing Favourites: toggle favourite">');
         $toggle_button.insertAfter($(this).find(".go"));
         $toggle_button.attr("data-active", active);
         $toggle_button.attr("data-storylet-id", storyletId);
@@ -203,10 +207,6 @@ function parseCards() {
         $(this).removeClass("card_discard");
         $(this).addClass("card_protect");
         $toggle_button.attr("src", chrome.runtime.getURL("img/card_protect.png"));
-        /*$(this).click(discardProtect);
-        if (protect_timestamps[cardId] && protect_timestamps[cardId] > Date.now() - PROTECT_INTERVAL) {
-          this.value = "  SURE?  ";
-        }*/
       } else {
         $(this).removeClass("card_discard");
         $(this).removeClass("card_protect");
@@ -216,9 +216,9 @@ function parseCards() {
   });
 }
 
-chrome.storage.onChanged.addListener(function(changes, area) {
+function onStorageChange(changes, area) {
   if (area === "local") { loadData(parseStorylets); }
-});
+}
 
 function loadData(callback) {
   chrome.storage.local.get(
@@ -295,28 +295,6 @@ function cardToggle(e) {
   }
 }
 
-/*function discardProtect(e) {
-  var cardId = parseInt(this.dataset.cardId);
-
-  function revertDiscard(cardId) {
-    return function() {
-      $(".discard_btn[data-card-id=" + cardId + "]").attr("value", "DISCARD");
-      protect_timestamps.delete(cardId);
-    };
-  }
-
-  if (card_protects.has(cardId)) {
-    if (protect_timestamps[cardId] && protect_timestamps[cardId] > Date.now() - PROTECT_INTERVAL) {
-      return;
-    } else {
-      e.preventDefault();
-      this.value = "  SURE?  ";
-      protect_timestamps[cardId] = Date.now();
-      setTimeout(PROTECT_INTERVAL, revertDiscard(cardId));
-    }
-  }
-}*/
-
 function saveFaves(callback) {
   let data = {};
 
@@ -367,4 +345,3 @@ function setCardFave(cardId, mode) {
   }
   saveFaves(parseCards);
 }
-
