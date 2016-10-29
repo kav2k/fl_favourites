@@ -1,6 +1,9 @@
-Known issues:
+Version 0.3
 
-* Can break down if more than ~1200 favourites are saved
+* Worked around the script not always activating (e.g. after login)
+* Added avoid (red) option for branches/storylets
+* Added a modifier-click mode for cycling through green/red states
+* Improved storage engine to support more records
 
 Version 0.2.2
 
