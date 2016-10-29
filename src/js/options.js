@@ -2,7 +2,6 @@ $(document).ready(function() {
   $("input[type=radio]").each(function() {
     let el = this;
     chrome.storage.local.get(el.name, function(data) {
-      console.log("Load: ", data);
       el.checked = (data[el.name] === el.value);
     });
   }).change(function() {
@@ -10,20 +9,17 @@ $(document).ready(function() {
     if (this.checked) {
       data[this.name] = this.value;
     }
-    console.log("Save: ", data);
     chrome.storage.local.set(data);
   });
 
   $("input[type=checkbox]").each(function() {
     let el = this;
     chrome.storage.local.get(el.value, function(data) {
-      console.log("Load: ", data);
       el.checked = data[el.value];
     });
   }).change(function() {
     let data = {};
     data[this.value] = this.checked;
-    console.log("Save: ", data);
     chrome.storage.local.set(data);
   });
 

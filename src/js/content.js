@@ -18,7 +18,7 @@ window.dispatchEvent(event);
 window.addEventListener("PlayingFavouritesLoad", suicide, false);
 
 var version = chrome.runtime.getManifest().version;
-console.log("Playing Favourites " + version + " injected");
+console.log(`Playing Favourites ${version} injected`);
 
 // -----------------
 
@@ -43,7 +43,7 @@ function registerObserver() {
 
 // Gracefully shut down orphaned instance
 function suicide() {
-  console.warn("Playing Favourites " + version + " content script orphaned");
+  console.warn(`Playing Favourites ${version} content script orphaned`);
   observer.disconnect();
   window.removeEventListener("PlayingFavouritesLoad", suicide);
   chrome.storage.onChanged.removeListener(onStorageChange);
