@@ -224,10 +224,10 @@ function loadData(callback) {
   chrome.storage.local.get(
     null,
     function(data) {
-      branch_faves = new Set(data.branch_fave_array);
-      storylet_faves = new Set(data.storylet_fave_array);
-      card_protects = new Set(data.card_protect_array);
-      card_discards = new Set(data.card_discard_array);
+      branch_faves = unpackSet(data, "branch_faves");
+      storylet_faves = unpackSet(data, "storylet_faves");
+      card_protects = unpackSet(data, "card_protects");
+      card_discards = unpackSet(data, "card_discards");
 
       options.branch_reorder_mode = data.branch_reorder_mode;
       options.switch_mode = data.switch_mode;
@@ -318,35 +318,16 @@ function cardToggle(e) {
 }*/
 
 function saveFaves(callback) {
-  var branch_fave_array = [];
-  var storylet_fave_array = [];
-  var card_protect_array = [];
-  var card_discard_array = [];
+  let data = {};
 
-  var key;
-  for (key of branch_faves.keys()) {
-    branch_fave_array.push(key);
-  }
-  for (key of storylet_faves.keys()) {
-    storylet_fave_array.push(key);
-  }
-  for (key of card_protects.keys()) {
-    card_protect_array.push(key);
-  }
-  for (key of card_discards.keys()) {
-    card_discard_array.push(key);
-  }
+  Object.assign(data, branch_faves.pack("branch_faves"));
+  Object.assign(data, storylet_faves.pack("storylet_faves"));
+  Object.assign(data, card_protects.pack("card_protects"));
+  Object.assign(data, card_discards.pack("card_discards"));
 
-  chrome.storage.local.set(
-    {
-      branch_fave_array: branch_fave_array,
-      storylet_fave_array: storylet_fave_array,
-      card_protect_array: card_protect_array,
-      card_discard_array: card_discard_array
-    }, function() {
-      if (callback) { callback(); }
-    }
-  );
+  chrome.storage.local.set(data, function() {
+    if (callback) { callback(); }
+  });
 }
 
 function addBranchFave(branchId) {

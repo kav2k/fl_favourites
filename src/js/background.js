@@ -2,12 +2,12 @@ var default_options = {
   branch_reorder_mode: "branch_reorder_active",
   switch_mode: "click_through",
 
-  branch_fave_array: [],
-  storylet_fave_array: [],
-  card_protect_array: [],
-  card_discard_array: [],
+  branch_faves_keys: [],
+  storylet_faves_keys: [],
+  card_protects_keys: [],
+  card_discards_keys: [],
 
-  storage_schema: 1
+  storage_schema: 2
 };
 
 // Inject into open tabs on launch
@@ -18,6 +18,7 @@ function reinjectContentScripts() {
   var contentScripts = [
     "js/lib/jquery.js",
     "js/lib/mutation-summary.js",
+    "js/set_pack.js",
     "js/content.js"
   ];
 
@@ -48,7 +49,7 @@ function init(avoidSync = false) {
   const storage = (avoidSync) ? chrome.storage.local : chrome.storage.sync;
   storage.get(default_options, function(data) {
     switch (data.storage_schema) {
-      case 0:
+      case 0: // Rename saved array in storage
         storage.get(["branch_faves", "branch_fave_array"], function(more_data) {
           if (more_data.branch_faves) {
             data.branch_fave_array = more_data.branch_faves;
@@ -59,6 +60,22 @@ function init(avoidSync = false) {
           }
         });
         return;
+      case 1: // Migrate from saved arrays to packed sets
+        storage.get([
+          "branch_fave_array",
+          "storylet_fave_array",
+          "card_protect_array",
+          "card_discard_array"
+        ], function(data) {
+          Object.assign(data, new Set(data.branch_fave_array).pack("branch_faves"));
+          Object.assign(data, new Set(data.storylet_fave_array).pack("storylet_faves"));
+          Object.assign(data, new Set(data.card_protect_array).pack("card_protects"));
+          Object.assign(data, new Set(data.card_discard_array).pack("card_discards"));
+          data.storage_schema = 2;
+          storage.set(data, function() {
+            syncToLocal(reinjectContentScripts);
+          });
+        });
     }
 
     storage.set(data, function() {

@@ -20,6 +20,7 @@
       "js": [
         "js/lib/jquery.js",
         "js/lib/mutation-summary.js",
+        "js/set_pack.js",
         "js/content.js"
       ],
       "css": [
@@ -30,7 +31,8 @@
   ],
 
   "background": {
-    "scripts": [ 
+    "scripts": [
+      "js/set_pack.js",
       "js/background.js"
     ],
     "persistent": false
