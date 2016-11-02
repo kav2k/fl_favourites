@@ -1,3 +1,7 @@
+Version 0.3.1
+
+* REALLY worked around the script not always activating (e.g. after login)
+
 Version 0.3
 
 * Worked around the script not always activating (e.g. after login)
