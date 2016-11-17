@@ -71,21 +71,16 @@ function fillClickHandlers(callback) {
         this.dataset.onsubmit = this.attributes.onsubmit.value;
       }
     });
-    $(".storylet input[type=submit].standard_btn, .discard_btn").each(function() {
-      if (!this.dataset.originalValue) {
-        this.dataset.originalValue = this.value;
-      }
-    });
-
-    // Intercept clicks to avoided elements
-    document.getElementById("mainContentViaAjax").addEventListener(
-      "click",
-      FLFavourites_protectAvoids || function(){}, // Sane no-op fallback just in case
-      true // Capture before it reaches inline onclick
-    );
   };
 
   pageInject(injected);
+
+  // Record original button labels
+  $(".storylet input[type=submit].standard_btn, .discard_btn").each(function() {
+    if (!this.dataset.originalValue) {
+      this.dataset.originalValue = this.value;
+    }
+  });
 
   callback();
 }
@@ -287,42 +282,49 @@ function loadData(callback) {
 
       options.branch_reorder_mode = data.branch_reorder_mode;
       options.switch_mode = data.switch_mode;
+      options.protectInterval = 2000; // DUMMY
 
-      let protector = function() {
-        // Note: This executes in another context!
-        // Note: This assumes jQuery in the other context!
-        window.FLFavourites_protectInterval = 2000;
-
-        window.FLFavourites_restoreLabel = function(element) {
-          return function() {
-            element.value = element.dataset.originalValue;
-          };
-        };
-
-        window.FLFavourites_protectAvoids = function(e) {
-          if (e.metaKey || e.ctrlKey) { return; } // Ctrl-click always bypasses protection
-
-          if ($(e.target).is(".storylet_avoid input[type=submit].standard_btn, .card_protect")) {
-            let time = Date.now();
-            if (
-              !e.target.dataset.protectTimestamp ||
-              (time - e.target.dataset.protectTimestamp) >= FLFavourites_protectInterval
-            ) {
-              e.stopImmediatePropagation();
-              e.preventDefault();
-              console.log("Protected!");
-              e.target.value = ($(e.target).is(".card_protect")) ? "  SURE?  " : "Sure?";
-              e.target.dataset.protectTimestamp = time;
-              setTimeout(FLFavourites_restoreLabel(e.target), FLFavourites_protectInterval);
-            }
-          }
-        };
-      };
-
-      pageInject(protector);
+      initializeProtector();
 
       if (callback) { callback(); }
     }
+  );
+}
+
+function restoreLabelCallback(element) {
+  return function() {
+    element.value = element.dataset.originalValue;
+  };
+}
+
+function protectAvoids(e) {
+  if (e.metaKey || e.ctrlKey) { return; } // Ctrl-click always bypasses protection
+
+  // If clicked on branch selection OR card discard that's red
+  if ($(e.target).is(".storylet_avoid input[type=submit].standard_btn, .card_protect")) {
+    let time = Date.now();
+    if (
+      !e.target.dataset.protectTimestamp ||
+      (time - e.target.dataset.protectTimestamp) >= options.protectInterval
+    ) {
+      // Prevent page's inline handler from firing
+      e.stopImmediatePropagation();
+      e.preventDefault();
+
+      console.log("Protected!");
+      e.target.value = ($(e.target).is(".card_protect")) ? "  SURE?  " : "Sure?";
+      e.target.dataset.protectTimestamp = time;
+      setTimeout(restoreLabelCallback(e.target), options.protectInterval);
+    }
+  }
+}
+
+function initializeProtector() {
+  // Intercept clicks to avoided elements
+  document.getElementById("mainContentViaAjax").addEventListener(
+    "click",
+    protectAvoids,
+    true // Capture before it reaches inline onclick
   );
 }
 
