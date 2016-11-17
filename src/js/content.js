@@ -6,9 +6,6 @@ var card_protects = new Set();
 var card_discards = new Set();
 var options = {};
 
-/*var protect_timestamps = {};
-var PROTECT_INTERVAL = 2000;*/
-
 var observer;
 
 loadData(registerObserver);
@@ -51,27 +48,45 @@ function suicide() {
   chrome.storage.onChanged.removeListener(onStorageChange);
 }
 
+function pageInject(func) {
+  // Inject into the page context
+  let s = document.createElement("script");
+  s.textContent = "(" + func + ")();";
+  (document.head || document.documentElement).appendChild(s);
+  s.parentNode.removeChild(s);
+}
+
 // Make inline click/submit handlers visible to the isolated world
 function fillClickHandlers(callback) {
   let injected = function() {
     // Note: This executes in another context!
     // Note: This assumes jQuery in the other context!
     $("[onclick]").each(function() {
-      this.dataset.onclick = this.attributes.onclick.value;
+      if (!this.dataset.onclick) {
+        this.dataset.onclick = this.attributes.onclick.value;
+      }
     });
     $("[onsubmit]").each(function() {
-      this.dataset.onsubmit = this.attributes.onsubmit.value;
+      if (!this.dataset.onsubmit) {
+        this.dataset.onsubmit = this.attributes.onsubmit.value;
+      }
     });
-    $("[onload]").each(function() {
-      this.dataset.onload = this.attributes.onload.value;
+    $(".storylet input[type=submit].standard_btn, .discard_btn").each(function() {
+      if (!this.dataset.originalValue) {
+        this.dataset.originalValue = this.value;
+      }
     });
+
+    // Intercept clicks to avoided elements
+    document.getElementById("mainContentViaAjax").addEventListener(
+      "click",
+      FLFavourites_protectAvoids || function(){}, // Sane no-op fallback just in case
+      true // Capture before it reaches inline onclick
+    );
   };
 
-  // Inject into the page context
-  let s = document.createElement("script");
-  s.textContent = "(" + injected + ")();";
-  (document.head || document.documentElement).appendChild(s);
-  s.parentNode.removeChild(s);
+  pageInject(injected);
+
   callback();
 }
 
@@ -272,6 +287,39 @@ function loadData(callback) {
 
       options.branch_reorder_mode = data.branch_reorder_mode;
       options.switch_mode = data.switch_mode;
+
+      let protector = function() {
+        // Note: This executes in another context!
+        // Note: This assumes jQuery in the other context!
+        window.FLFavourites_protectInterval = 2000;
+
+        window.FLFavourites_restoreLabel = function(element) {
+          return function() {
+            element.value = element.dataset.originalValue;
+          };
+        };
+
+        window.FLFavourites_protectAvoids = function(e) {
+          if (e.metaKey || e.ctrlKey) { return; } // Ctrl-click always bypasses protection
+
+          if ($(e.target).is(".storylet_avoid input[type=submit].standard_btn, .card_protect")) {
+            let time = Date.now();
+            if (
+              !e.target.dataset.protectTimestamp ||
+              (time - e.target.dataset.protectTimestamp) >= FLFavourites_protectInterval
+            ) {
+              e.stopImmediatePropagation();
+              e.preventDefault();
+              console.log("Protected!");
+              e.target.value = ($(e.target).is(".card_protect")) ? "  SURE?  " : "Sure?";
+              e.target.dataset.protectTimestamp = time;
+              setTimeout(FLFavourites_restoreLabel(e.target), FLFavourites_protectInterval);
+            }
+          }
+        };
+      };
+
+      pageInject(protector);
 
       if (callback) { callback(); }
     }
