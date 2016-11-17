@@ -15,13 +15,13 @@ var default_options = {
 // Inject into open tabs on launch
 function reinjectContentScripts() {
   let stylesheets = [
-    "css/content.css"
+    "/css/content.css"
   ];
   let contentScripts = [
-    "js/lib/jquery.js",
-    "js/lib/mutation-summary.js",
-    "js/set_pack.js",
-    "js/content.js"
+    "/js/lib/jquery.js",
+    "/js/lib/mutation-summary.js",
+    "/js/set_pack.js",
+    "/js/content.js"
   ];
 
   chrome.tabs.query({url: "*://fallenlondon.storynexus.com/Gap/Load*"}, function(tabs) {

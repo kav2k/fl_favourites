@@ -23,9 +23,13 @@ $(document).ready(function() {
     chrome.storage.local.set(data);
   });
 
-  $.ajax("changelog.txt").done(function(text) {
+  $.ajax("/changelog.txt", {dataType: "text"}).done(function(text) {
     $("#changelogText").text(text);
   });
+
+  if (window.browser) { // Firefox
+    $("#rate_chrome").hide();
+  }
 
   $("#optionsContainer").show();
 
