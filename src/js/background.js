@@ -25,16 +25,17 @@ function reinjectContentScripts() {
   ];
 
   chrome.tabs.query({url: "*://fallenlondon.storynexus.com/Gap/Load*"}, function(tabs) {
-    function silence() {
-      if (chrome.runtime.lastError) { /* silence access errors */ }
+    if (chrome.runtime.lastError) {
+      // Assume Firefox (does not allow query with URL)
+      return; // Do nothing: FF reinjects content scripts on load anyway
     }
 
     tabs.forEach(function(tab) {
       for (let file of stylesheets) {
-        chrome.tabs.insertCSS(tab.id, {file: file}, silence);
+        chrome.tabs.insertCSS(tab.id, {file: file});
       }
       for (let file of contentScripts) {
-        chrome.tabs.executeScript(tab.id, {file: file, runAt: "document_end"}, silence);
+        chrome.tabs.executeScript(tab.id, {file: file, runAt: "document_end"});
       }
     });
   });
