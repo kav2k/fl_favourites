@@ -45,7 +45,7 @@ function suicide() {
   console.warn(`Playing Favourites ${version} content script orphaned`);
   observer.disconnect();
   window.removeEventListener("PlayingFavouritesLoad", suicide);
-  chrome.storage.onChanged.removeListener(onStorageChange);
+  document.getElementById("mainContentViaAjax").removeEventListener("click", protectAvoids, true);
 }
 
 function pageInject(func) {
