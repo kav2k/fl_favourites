@@ -44,45 +44,58 @@ function reinjectContentScripts() {
 if (chrome.runtime.onInstalled) {
   chrome.runtime.onInstalled.addListener(init);
 } else { // Jeez, Firefox, really? NOT IMPLEMENTED https://bugzilla.mozilla.org/show_bug.cgi?id=1252871
-  init(true);
+  init();
 }
 
-function init(avoidSync = false) {
-  const storage = (avoidSync) ? chrome.storage.local : chrome.storage.sync;
+function init() {
+  const storage = chrome.storage.sync || chrome.storage.local;
+
+  migrate(
+    storage,
+    reinjectContentScripts,
+    reinjectContentScripts // Try to continue with local data
+  );
+}
+
+function noop() {}
+
+function migrate(storage, callback = noop, errorCallback = noop) {
   storage.get(default_options, function(data) {
     switch (data.storage_schema) {
       case 0: // Rename saved array in storage
-        storage.get(["branch_faves", "branch_fave_array"], function(more_data) {
+        storage.get(["branch_faves", "branch_fave_array"], (more_data) => {
           if (more_data.branch_faves) {
             data.branch_fave_array = more_data.branch_faves;
             data.storage_schema = 1;
-            storage.set(data, function() {
-              syncToLocal(reinjectContentScripts);
-            });
+            storage.set(data, () => {migrate(storage, callback);});
           }
         });
-        return;
+        break;
       case 1: // Migrate from saved arrays to packed sets
         storage.get([
           "branch_fave_array",
           "storylet_fave_array",
           "card_protect_array",
           "card_discard_array"
-        ], function(data) {
+        ], (data) => {
           Object.assign(data, new Set(data.branch_fave_array).pack("branch_faves"));
           Object.assign(data, new Set(data.storylet_fave_array).pack("storylet_faves"));
           Object.assign(data, new Set(data.card_protect_array).pack("card_protects"));
           Object.assign(data, new Set(data.card_discard_array).pack("card_discards"));
           data.storage_schema = 2;
-          storage.set(data, function() {
-            syncToLocal(reinjectContentScripts);
-          });
+          storage.set(data, () => {migrate(storage, callback);});
         });
+        break;
+      case default_options.storage_schema: // Expected; we're at current version
+        storage.set(data, callback);
+        break;
+      default: // Unknown version - probably synced from newer one
+        console.error(`Unknown data storage schema (got ${data.storage_schema}, expected ${default_options.storage_schema})`);
+        if (chrome.runtime.requestUpdateCheck) {
+          chrome.runtime.requestUpdateCheck(noop);
+        }
+        errorCallback();
     }
-
-    storage.set(data, function() {
-      syncToLocal(reinjectContentScripts);
-    });
   });
 }
 
@@ -91,22 +104,22 @@ const SYNC_PERIOD = 1000 * 3; // 3 seconds is safe for both syncing and event pa
 var syncTimeout;
 var syncTS = 0;
 
-function syncToLocal(callback) {
+function syncToLocal(callback = noop) {
   if (!chrome.storage.sync) { // Firefox: NOT IMPLEMENTED https://bugzilla.mozilla.org/show_bug.cgi?id=1220494
-    if (callback) { callback(); }
+    callback();
     return;
   }
 
-  chrome.storage.sync.get(null, function(data) {
-    chrome.storage.local.set(data, function() {
-      if (callback) { callback(); }
+  migrate(chrome.storage.sync, () => {
+    chrome.storage.sync.get(null, (data) => {
+      chrome.storage.local.set(data, callback);
     });
-  });
+  }); // Do nothing if migration is impossible (data too new)
 }
 
-function localToSync(callback) {
+function localToSync(callback = noop) {
   if (!chrome.storage.sync) { // Firefox: NOT IMPLEMENTED https://bugzilla.mozilla.org/show_bug.cgi?id=1220494
-    if (callback) { callback(); }
+    callback();
     return;
   }
   
@@ -114,12 +127,12 @@ function localToSync(callback) {
   syncTS = Date.now();
   clearTimeout(syncTimeout);
 
-  chrome.storage.local.get(null, function(data) {
-    chrome.storage.sync.set(data, function() {
+  chrome.storage.local.get(null, (data) => {
+    chrome.storage.sync.set(data, () => {
       if (chrome.runtime.lastError) {
         console.error("Error syncing options: " + chrome.runtime.lastError.message);
       }
-      if (callback) { callback(); }
+      callback();
     });
   });
 }
