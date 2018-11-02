@@ -5,7 +5,7 @@
   "short_name": "Playing Favourites",
   "description": "Unofficial Fallen London extension to quickly choose favourite branches",
 
-  "version": "0.3.1",
+  "version": "0.4.0",
 
   "icons": {
     "16" : "img/icon16.png",
@@ -16,7 +16,7 @@
 
   "content_scripts": [
     {
-      "matches": ["*://fallenlondon.storynexus.com/Gap/Load*"],
+      "matches": ["*://www.fallenlondon.com/*"],
       "js": [
         "js/lib/jquery.js",
         "js/lib/mutation-summary.js",
@@ -41,7 +41,7 @@
   "permissions": [
     "storage",
     "unlimitedStorage",
-    "*://fallenlondon.storynexus.com/*"
+    "*://www.fallenlondon.com/*"
   ],
   
   "minimum_chrome_version": "49",

@@ -6,9 +6,7 @@ var card_protects = new Set();
 var card_discards = new Set();
 var options = {};
 
-var observer;
 
-loadData(registerObserver);
 chrome.storage.onChanged.addListener(onStorageChange);
 
 var event = new CustomEvent("PlayingFavouritesLoad");
@@ -19,11 +17,23 @@ window.addEventListener("PlayingFavouritesLoad", suicide, false);
 var version = chrome.runtime.getManifest().version;
 console.log(`Playing Favourites ${version} injected`);
 
+var wrapObserver = new MutationSummary({
+	rootNode: document.getElementById("root"),
+	callback: function(summaries) {
+		if (summaries[0].added.length === 1) {
+			loadData(registerObserver);
+		}
+	},
+	queries: [{element: "#main"}]
+});
+
 // -----------------
+
+var observer;
 
 function registerObserver() {
   observer = new MutationSummary({
-    rootNode: document.getElementById("mainContentViaAjax"),
+    rootNode: document.getElementById("main"),
     callback: function(summaries) {
       summaries.forEach(function(summary) {
         fillClickHandlers(function() {
@@ -32,7 +42,7 @@ function registerObserver() {
         });
       });
     },
-    queries: [{element: ".storylet"}, {element: ".discard_btn"}]
+    queries: [{element: ".storylet"}, {element: ".hand__card-container"}] 
   });
   fillClickHandlers(function() {
     parseStorylets(true);
@@ -45,7 +55,7 @@ function suicide() {
   console.warn(`Playing Favourites ${version} content script orphaned`);
   observer.disconnect();
   window.removeEventListener("PlayingFavouritesLoad", suicide);
-  document.getElementById("mainContentViaAjax").removeEventListener("click", protectAvoids, true);
+  document.getElementById("main").removeEventListener("click", protectAvoids, true);
 }
 
 function pageInject(func) {
@@ -76,7 +86,7 @@ function fillClickHandlers(callback) {
   pageInject(injected);
 
   // Record original button labels
-  $(".storylet input[type=submit].standard_btn, .discard_btn").each(function() {
+  $(".storylet input[type=submit].standard_btn, .card__discard-button").each(function() {
     if (!this.dataset.originalValue) {
       this.dataset.originalValue = this.value;
     }
@@ -86,9 +96,9 @@ function fillClickHandlers(callback) {
 }
 
 function parseStorylets(reorder = false) { // Call without options to ensure no reordering
-  let $container = $("#mainContentViaAjax");
-  let $branches = $("#mainContentViaAjax > .storylet");
-  let $storylets = $("#mainContentViaAjax .storylet-select");
+  let $container = $("#main");
+  let $branches = $("#main .media--branch");
+  let $storylets = $("#main .storylet");
 
   let reorder_active = false;
   let reorder_locked = false;
@@ -115,21 +125,21 @@ function parseStorylets(reorder = false) { // Call without options to ensure no 
 
   if ($branches.length) {
     $first = $branches.first();
-    $last_active = $branches.not(".locked").last();
+    $last_active = $branches.not(".media--locked").last();
     $last = $branches.last();
 
     $branches.each(function() {
-      let match = this.id.match(/branch(\d+)/);
+      let match = $(this).data("branch-id");
       if (match) {
-        const branchId = parseInt(match[1]);
-        const active = $(this).hasClass("locked");
+        const branchId = parseInt(match);
+        const active = $(this).hasClass("media--locked");
 
         $(this).find(".fave_toggle_button").remove();
 
-        if ($(this).find(".go").prop("offsetParent") === null) { return; } // Fix for Protector extensions
+        if ($(this).find(".button--go").prop("offsetParent") === null) { return; } // Fix for Protector extensions
 
         let $toggle_button = $('<input type="image" class="fave_toggle_button" title="Playing Favourites: toggle favourite">');
-        $toggle_button.insertAfter($(this).find(".go"));
+        $toggle_button.insertAfter($(this).find(".button--go"));
         $toggle_button.attr("data-active", active);
         $toggle_button.attr("data-branch-id", branchId);
         $toggle_button.click(branchToggle);
@@ -154,25 +164,22 @@ function parseStorylets(reorder = false) { // Call without options to ensure no 
     $avoids = $branches.filter(".storylet_avoid");
   } else if ($storylets.length) {
     $first = $storylets.first();
-    $last_active = $storylets.not(".locked").last();
+    $last_active = $storylets.not(".media--locked").last();
     $last = $storylets.last();
 
     $storylets.each(function() {
-      let match;
-      if ($(this).find(".go > input").attr("data-onclick")) {
-        match = $(this).find(".go > input").attr("data-onclick").match(/beginEvent\((\d+)\)/);
-      }
+      let match = $(this).parent().data("branch-id");
 
       if (match) {
         const storyletId = parseInt(match[1]);
-        const active = $(this).hasClass("locked");
+        const active = $(this).hasClass("media--locked");
 
         $(this).find(".fave_toggle_button").remove();
 
-        if ($(this).find(".go").prop("offsetParent") === null) { return; } // Fix for Protector extensions
+        if ($(this).find(".button--go").prop("offsetParent") === null) { return; } // Fix for Protector extensions
 
         let $toggle_button = $('<input type="image" class="fave_toggle_button" title="Playing Favourites: toggle favourite">');
-        $toggle_button.insertAfter($(this).find(".go"));
+        $toggle_button.insertAfter($(this).find(".button--go"));
         $toggle_button.attr("data-active", active);
         $toggle_button.attr("data-storylet-id", storyletId);
         $toggle_button.click(storyletToggle);
@@ -199,66 +206,68 @@ function parseStorylets(reorder = false) { // Call without options to ensure no 
 
   if ($faves && $faves.length) {
     if (reorder_locked) {
-      $faves.filter(".locked").insertBefore($first);
+      $faves.filter(".media--locked").insertBefore($first);
     }
     if (reorder_active) {
-      $faves.not(".locked").insertBefore($first);
+      $faves.not(".media--locked").insertBefore($first);
     }
   }
 
   if ($avoids && $avoids.length) {
     if (reorder_locked) {
       if ($last_active.length) {
-        $avoids.filter(".locked").insertAfter($last_active);
+        $avoids.filter(".media--locked").insertAfter($last_active);
       } else {
-        $avoids.filter(".locked").insertBefore($last);
+        $avoids.filter(".media--locked").insertBefore($last);
       }
     }
     if (reorder_active) {
       if ($last_active.length) {
-        $avoids.not(".locked").insertAfter($last_active);
+        $avoids.not(".media--locked").insertAfter($last_active);
       } else {
-        $avoids.not(".locked").insertBefore($last);
+        $avoids.not(".media--locked").insertBefore($last);
       }
     }
   }
 }
 
 function parseCards() {
-  let $discards = $("#mainContentViaAjax .discard_btn");
+  let $cards = $("#main .hand__card-container");
 
-  $discards.each(function() {
+  $cards.each(function() {
     let match;
-    if (this.dataset.onclick) {
-      match = this.dataset.onclick.match(/eventid=(\d+)/);
+    if (this.dataset.eventId) {
+      match = this.dataset.eventId;
     }
 
     if (match) {
-      const cardId = parseInt(match[1]);
+      const cardId = parseInt(match);
 
-      $(this).next(".card_toggle_button").remove();
+      $(this).children(".card_toggle_button").remove();
 
       if (this.offsetParent === null) { return; } // Fix for Protector extensions
 
       let $toggle_button = $('<input type="image" class="card_toggle_button" title="Playing Favourites: toggle favourite">');
-      $toggle_button.insertAfter($(this));
+      $(this).append($toggle_button);
 
       $toggle_button.attr("data-card-id", cardId);
-      $(this).attr("data-card-id", cardId);
+      //$(this).attr("data-card-id", cardId);
 
       $toggle_button.click(cardToggle);
 
+	  let $discard_button = $(this).children('.card__discard-button');
+
       if (card_discards.has(cardId)) {
-        $(this).addClass("card_discard");
-        $(this).removeClass("card_protect");
+        $discard_button.addClass("card_discard");
+        $discard_button.removeClass("card_protect");
         $toggle_button.attr("src", chrome.runtime.getURL("img/card_discard.png"));
       } else if (card_protects.has(cardId)) {
-        $(this).removeClass("card_discard");
-        $(this).addClass("card_protect");
+        $discard_button.removeClass("card_discard");
+        $discard_button.addClass("card_protect");
         $toggle_button.attr("src", chrome.runtime.getURL("img/card_protect.png"));
       } else {
-        $(this).removeClass("card_discard");
-        $(this).removeClass("card_protect");
+        $discard_button.removeClass("card_discard");
+        $discard_button.removeClass("card_protect");
         $toggle_button.attr("src", chrome.runtime.getURL("img/card_empty.png"));
       }
     }
@@ -321,7 +330,7 @@ function protectAvoids(e) {
 
 function initializeProtector() {
   // Intercept clicks to avoided elements
-  document.getElementById("mainContentViaAjax").addEventListener(
+  document.getElementById("main").addEventListener(
     "click",
     protectAvoids,
     true // Capture before it reaches inline onclick

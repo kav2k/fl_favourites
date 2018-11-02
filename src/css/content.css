@@ -21,18 +21,27 @@
   display: none;
 }
 
+.hand__card-container.hand__card-container {
+  position: relative;
+}
+
+.card__discard-button.card__discard-button {
+  width: 80%;
+  padding: 8px 13px;
+}
+
 .card_toggle_button.card_toggle_button {
   height: 16px;
   width: 16px;
   position: absolute;
-  bottom: -30px;
-  left: 85px;
+  bottom: 7px;
+  left: 88px;
 }
 
-.card_discard.card_discard, .card_discard.card_discard:hover {
+button.card_discard.card_discard, button.card_discard.card_discard:hover {
   border-color: lime;
 }
 
-.card_protect.card_protect, .card_protect.card_protect:hover {
+button.card_protect.card_protect, button.card_protect.card_protect:hover {
   border-color: red;
 }
