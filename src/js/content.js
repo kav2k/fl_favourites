@@ -40,7 +40,7 @@ function registerObserver() {
 	    parseCards();
 	  });
     },
-    queries: [{element: ".storylet"}, {element: ".hand__card-container"}, {element: ".small-card-container"}] 
+    queries: [{element: ".storylet"}, {element: ".media--branch"}, {element: ".hand__card-container"}, {element: ".small-card-container"}] 
   });
   fillClickHandlers(function() {
     parseStorylets(true);
@@ -122,10 +122,6 @@ function parseStorylets(reorder = false) { // Call without options to ensure no 
   let $last;
 
   if ($branches.length) {
-    $first = $branches.first();
-    $last_active = $branches.not(".media--locked").last();
-    $last = $branches.last();
-
     $branches.each(function() {
       let match = $(this).data("branch-id");
       if (match) {
@@ -158,13 +154,13 @@ function parseStorylets(reorder = false) { // Call without options to ensure no 
       }
     });
 
+    $first = $branches.first();
+    $last_active = $branches.not(".media--locked").last();
+    $last = $branches.last();
+
     $faves = $branches.filter(".storylet_favourite");
     $avoids = $branches.filter(".storylet_avoid");
   } else if ($storylets.length) {
-    $first = $storylets.first().parent();
-    $last_active = $storylets.not(".media--locked").last();
-    $last = $storylets.last();
-
     $storylets.each(function() {
       let match = $(this).parent().data("branch-id");
 
@@ -198,32 +194,36 @@ function parseStorylets(reorder = false) { // Call without options to ensure no 
       }
     });
 
-    $faves = $storylets.filter(".storylet_favourite").parent();
-    $avoids = $storylets.filter(".storylet_avoid").parent();
+    $first = $storylets.first();
+    $last_active = $storylets.not(".media--locked").last();
+    $last = $storylets.last();
+
+    $faves = $storylets.filter(".storylet_favourite");
+    $avoids = $storylets.filter(".storylet_avoid");
   }
 
   if ($faves && $faves.length) {
     if (reorder_locked) {
-      $faves.filter(".media--locked").insertBefore($first);
+      $faves.filter(".media--locked").parent().insertBefore($first.parent());
     }
     if (reorder_active) {
-      $faves.not(".media--locked").insertBefore($first);
+      $faves.not(".media--locked").parent().insertBefore($first.parent());
     }
   }
 
   if ($avoids && $avoids.length) {
     if (reorder_locked) {
       if ($last_active.length) {
-        $avoids.filter(".media--locked").insertAfter($last_active);
+        $avoids.filter(".media--locked").parent().insertAfter($last_active.parent());
       } else {
-        $avoids.filter(".media--locked").insertBefore($last);
+        $avoids.filter(".media--locked").parent().insertBefore($last.parent());
       }
     }
     if (reorder_active) {
       if ($last_active.length) {
-        $avoids.not(".media--locked").insertAfter($last_active);
+        $avoids.not(".media--locked").parent().insertAfter($last_active.parent());
       } else {
-        $avoids.not(".media--locked").insertBefore($last);
+        $avoids.not(".media--locked").parent().insertBefore($last.parent());
       }
     }
   }
@@ -329,10 +329,15 @@ function protectAvoids(e) {
 
       console.log("Protected!");
 
-	  // TODO: figure out how to get this working with the site's React
-	  //let originalText = e.target.innerHTML;
-	  //e.target.innerHTML = "SURE?";
-      //setTimeout(function() { e.target.innerHTML = originalText; }, options.protectInterval);
+	  let $confirmText = $('<span class="protect-confirm">SURE?</span>');
+	  $(e.target).append($confirmText);
+	  $(e.target).addClass('button-protected');
+      setTimeout(
+		function() { 
+		  $(e.target).removeClass('button-protected');
+		  $confirmText.remove(); 
+		}, 
+		options.protectInterval);
 
       e.target.dataset.protectTimestamp = time;
     }
