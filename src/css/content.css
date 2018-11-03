@@ -1,47 +1,78 @@
 /* Needed for bypassing FL's specificity nightmares */
 /*csslint adjoining-classes:false*/
 
-.storylet_favourite.storylet_favourite.storylet_favourite {
+#main .storylet_favourite {
   border-color: lime;
 }
 
-.storylet_avoid.storylet_avoid.storylet_avoid {
+#main .storylet_avoid {
   border-color: red;
 }
 
-.fave_toggle_button.fave_toggle_button {
+#main .fave_toggle_button {
   float: right;
-  margin-left: -10px;
-  margin-right: 5px;
   height: 30px;
   width: 30px;
 }
 
-.storylet_anchor {
+#main .storylet_anchor {
   display: none;
 }
 
-.hand__card-container.hand__card-container {
+#main .hand__card-container {
   position: relative;
+  text-align: center;
 }
 
-.card__discard-button.card__discard-button {
+#main .card__discard-button {
   width: 80%;
   padding: 8px 13px;
 }
 
-.card_toggle_button.card_toggle_button {
+#main .card_toggle_button {
+  border: 0;
+}
+
+#main .hand__card-container .card_toggle_button {
+  background: url('chrome-extension://__MSG_@@extension_id__/img/card_empty.png');
   height: 16px;
   width: 16px;
-  position: absolute;
+  vertical-align: middle;
+  margin: 9px 0 0 3px;
+  /* position: absolute;
   bottom: 7px;
-  left: 88px;
+  left: 88px; */
 }
 
-button.card_discard.card_discard, button.card_discard.card_discard:hover {
-  border-color: lime;
+#main .small-card-container .card_toggle_button {
+  background: url('chrome-extension://__MSG_@@extension_id__/img/button_empty.png');
+  float: right;
+  height: 30px;
+  width: 30px;
 }
 
-button.card_protect.card_protect, button.card_protect.card_protect:hover {
-  border-color: red;
+#main .hand__card-container.card_fave .card_toggle_button {
+  background: url('chrome-extension://__MSG_@@extension_id__/img/card_filled.png');
+}
+
+#main .hand__card-container.card_avoid .card_toggle_button {
+  background: url('chrome-extension://__MSG_@@extension_id__/img/card_avoid.png');
+}
+
+#main .small-card-container.card_fave .card_toggle_button {
+  background: url('chrome-extension://__MSG_@@extension_id__/img/button_filled.png');
+}
+
+#main .small-card-container.card_avoid .card_toggle_button {
+  background: url('chrome-extension://__MSG_@@extension_id__/img/button_avoid.png');
+}
+
+#main .button_fave, 
+#main .button_fave:hover {
+  outline: 1px solid lime;
+}
+
+#main .button_avoid, 
+#main .button_avoid:hover {
+  outline: 1px solid red;
 }
