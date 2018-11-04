@@ -27,11 +27,17 @@ var wrapObserver = new MutationSummary({
 	queries: [{element: "#main"}]
 });
 
+// True in case of reinject
+if (document.getElementById("main")) {
+  loadData(registerObserver);
+}
+
 // -----------------
 
 var observer;
 
 function registerObserver() {
+  if (observer) observer.disconnect();
   observer = new MutationSummary({
     rootNode: document.getElementById("main"),
     callback: function(summaries) {
@@ -50,7 +56,8 @@ function registerObserver() {
 
 // Gracefully shut down orphaned instance
 function suicide() {
-  console.warn(`Playing Favourites ${version} content script orphaned`);
+  console.log(`Playing Favourites ${version} content script orphaned`);
+  wrapObserver.disconnect();
   observer.disconnect();
   window.removeEventListener("PlayingFavouritesLoad", suicide);
   document.getElementById("main").removeEventListener("click", protectAvoids, true);
