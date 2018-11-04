@@ -2,11 +2,11 @@
 /*csslint adjoining-classes:false*/
 
 #main .storylet_favourite {
-	border-color: lime;
+	outline: thin solid lime;
 }
 
 #main .storylet_avoid {
-	border-color: red;
+	outline: thin solid red;
 }
 
 #main .fave_toggle_button {
