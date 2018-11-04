@@ -16,7 +16,7 @@
 
   "content_scripts": [
     {
-      "matches": ["*://www.fallenlondon.com/*"],
+      "matches": ["*://*.fallenlondon.com/*"],
       "js": [
         "js/lib/jquery.js",
         "js/lib/mutation-summary.js",
@@ -41,7 +41,7 @@
   "permissions": [
     "storage",
     "unlimitedStorage",
-    "*://www.fallenlondon.com/*"
+    "*://*.fallenlondon.com/*"
   ],
   
   "minimum_chrome_version": "49",
