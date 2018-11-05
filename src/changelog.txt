@@ -1,6 +1,6 @@
 Version 0.4.0
 
-* Updated to work with Fallen London's new UI (by trevorloflin)
+* Updated to work with Fallen London's new UI (by Trevor Loflin / Alexander Kashev)
 
 Version 0.3.1
 
