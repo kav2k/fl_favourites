@@ -18,13 +18,13 @@ var version = chrome.runtime.getManifest().version;
 console.log(`Playing Favourites ${version} injected`);
 
 var wrapObserver = new MutationSummary({
-	rootNode: document.getElementById("root"),
-	callback: function(summaries) {
-		if (summaries[0].added.length === 1) {
-			loadData(registerObserver);
-		}
-	},
-	queries: [{element: "#main"}]
+  rootNode: document.getElementById("root"),
+  callback: function(summaries) {
+    if (summaries[0].added.length === 1) {
+      loadData(registerObserver);
+    }
+  },
+  queries: [{element: "#main"}]
 });
 
 // True in case of reinject
@@ -311,9 +311,9 @@ function loadData(callback) {
 
       options.branch_reorder_mode = data.branch_reorder_mode;
       options.switch_mode = data.switch_mode;
-      options.protectInterval = 2000; // DUMMY
+      options.protectInterval = 2000; // TODO: Make configurable
 
-      initializeProtector();
+      // initializeProtector(); // TODO: Finish implementation
 
       if (callback) { callback(); }
     }
@@ -324,7 +324,7 @@ function protectAvoids(e) {
   if (e.metaKey || e.ctrlKey) { return; } // Ctrl-click always bypasses protection
 
   // If clicked on branch selection OR button set to avoid
-  if ($(e.target).is(".storylet_avoid .button--go, .button_avoid")) {
+  if ($(e.target).is(".storylet_avoid .button--go span, .button_avoid")) {
     let time = Date.now();
     if (
       !e.target.dataset.protectTimestamp ||
@@ -333,8 +333,6 @@ function protectAvoids(e) {
       // Prevent page's inline handler from firing
       e.stopImmediatePropagation();
       e.preventDefault();
-
-      console.log("Protected!");
 
 	  let $confirmText = $('<span class="protect-confirm">SURE?</span>');
 	  $(e.target).append($confirmText);
