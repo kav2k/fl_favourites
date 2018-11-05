@@ -2,13 +2,11 @@ var branch_faves = new Set();
 var branch_avoids = new Set();
 var storylet_faves = new Set();
 var storylet_avoids = new Set();
-var card_protects = new Set();
-var card_discards = new Set();
+var card_faves = new Set();
+var card_avoids = new Set();
 var options = {};
 
-var observer;
 
-loadData(registerObserver);
 chrome.storage.onChanged.addListener(onStorageChange);
 
 var event = new CustomEvent("PlayingFavouritesLoad");
@@ -19,20 +17,36 @@ window.addEventListener("PlayingFavouritesLoad", suicide, false);
 var version = chrome.runtime.getManifest().version;
 console.log(`Playing Favourites ${version} injected`);
 
+var wrapObserver = new MutationSummary({
+  rootNode: document.getElementById("root"),
+  callback: function(summaries) {
+    if (summaries[0].added.length === 1) {
+      loadData(registerObserver);
+    }
+  },
+  queries: [{element: "#main"}]
+});
+
+// True in case of reinject
+if (document.getElementById("main")) {
+  loadData(registerObserver);
+}
+
 // -----------------
 
+var observer;
+
 function registerObserver() {
+  if (observer) observer.disconnect();
   observer = new MutationSummary({
-    rootNode: document.getElementById("mainContentViaAjax"),
+    rootNode: document.getElementById("main"),
     callback: function(summaries) {
-      summaries.forEach(function(summary) {
-        fillClickHandlers(function() {
-          parseStorylets(true);
-          parseCards();
-        });
-      });
+	  fillClickHandlers(function() {
+	    parseStorylets(true);
+	    parseCards();
+	  });
     },
-    queries: [{element: ".storylet"}, {element: ".discard_btn"}]
+    queries: [{element: ".storylet"}, {element: ".media--branch"}, {element: ".hand__card-container"}, {element: ".small-card-container"}] 
   });
   fillClickHandlers(function() {
     parseStorylets(true);
@@ -42,10 +56,11 @@ function registerObserver() {
 
 // Gracefully shut down orphaned instance
 function suicide() {
-  console.warn(`Playing Favourites ${version} content script orphaned`);
+  console.log(`Playing Favourites ${version} content script orphaned`);
+  wrapObserver.disconnect();
   observer.disconnect();
   window.removeEventListener("PlayingFavouritesLoad", suicide);
-  document.getElementById("mainContentViaAjax").removeEventListener("click", protectAvoids, true);
+  document.getElementById("main").removeEventListener("click", protectAvoids, true);
 }
 
 function pageInject(func) {
@@ -76,7 +91,7 @@ function fillClickHandlers(callback) {
   pageInject(injected);
 
   // Record original button labels
-  $(".storylet input[type=submit].standard_btn, .discard_btn").each(function() {
+  $(".storylet .button--go, .card__discard-button").each(function() {
     if (!this.dataset.originalValue) {
       this.dataset.originalValue = this.value;
     }
@@ -86,9 +101,9 @@ function fillClickHandlers(callback) {
 }
 
 function parseStorylets(reorder = false) { // Call without options to ensure no reordering
-  let $container = $("#mainContentViaAjax");
-  let $branches = $("#mainContentViaAjax > .storylet");
-  let $storylets = $("#mainContentViaAjax .storylet-select");
+  let $container = $("#main");
+  let $branches = $("#main .media--branch");
+  let $storylets = $("#main .storylet");
 
   let reorder_active = false;
   let reorder_locked = false;
@@ -114,22 +129,18 @@ function parseStorylets(reorder = false) { // Call without options to ensure no 
   let $last;
 
   if ($branches.length) {
-    $first = $branches.first();
-    $last_active = $branches.not(".locked").last();
-    $last = $branches.last();
-
     $branches.each(function() {
-      let match = this.id.match(/branch(\d+)/);
+      let match = $(this).data("branch-id");
       if (match) {
-        const branchId = parseInt(match[1]);
-        const active = $(this).hasClass("locked");
+        const branchId = parseInt(match);
+        const active = $(this).hasClass("media--locked");
 
         $(this).find(".fave_toggle_button").remove();
 
-        if ($(this).find(".go").prop("offsetParent") === null) { return; } // Fix for Protector extensions
+        if ($(this).find(".button--go").prop("offsetParent") === null) { return; } // Fix for Protector extensions
 
         let $toggle_button = $('<input type="image" class="fave_toggle_button" title="Playing Favourites: toggle favourite">');
-        $toggle_button.insertAfter($(this).find(".go"));
+        $toggle_button.insertAfter($(this).find(".button--go"));
         $toggle_button.attr("data-active", active);
         $toggle_button.attr("data-branch-id", branchId);
         $toggle_button.click(branchToggle);
@@ -150,29 +161,26 @@ function parseStorylets(reorder = false) { // Call without options to ensure no 
       }
     });
 
+    $first = $branches.first();
+    $last_active = $branches.not(".media--locked").last();
+    $last = $branches.last();
+
     $faves = $branches.filter(".storylet_favourite");
     $avoids = $branches.filter(".storylet_avoid");
   } else if ($storylets.length) {
-    $first = $storylets.first();
-    $last_active = $storylets.not(".locked").last();
-    $last = $storylets.last();
-
     $storylets.each(function() {
-      let match;
-      if ($(this).find(".go > input").attr("data-onclick")) {
-        match = $(this).find(".go > input").attr("data-onclick").match(/beginEvent\((\d+)\)/);
-      }
+      let match = $(this).parent().data("branch-id");
 
       if (match) {
-        const storyletId = parseInt(match[1]);
-        const active = $(this).hasClass("locked");
+        const storyletId = parseInt(match);
+        const active = $(this).hasClass("media--locked");
 
         $(this).find(".fave_toggle_button").remove();
 
-        if ($(this).find(".go").prop("offsetParent") === null) { return; } // Fix for Protector extensions
+        if ($(this).find(".button--go").prop("offsetParent") === null) { return; } // Fix for Protector extensions
 
         let $toggle_button = $('<input type="image" class="fave_toggle_button" title="Playing Favourites: toggle favourite">');
-        $toggle_button.insertAfter($(this).find(".go"));
+        $toggle_button.insertAfter($(this).find(".button--go"));
         $toggle_button.attr("data-active", active);
         $toggle_button.attr("data-storylet-id", storyletId);
         $toggle_button.click(storyletToggle);
@@ -193,73 +201,94 @@ function parseStorylets(reorder = false) { // Call without options to ensure no 
       }
     });
 
+    $first = $storylets.first();
+    $last_active = $storylets.not(".media--locked").last();
+    $last = $storylets.last();
+
     $faves = $storylets.filter(".storylet_favourite");
     $avoids = $storylets.filter(".storylet_avoid");
   }
 
   if ($faves && $faves.length) {
     if (reorder_locked) {
-      $faves.filter(".locked").insertBefore($first);
+      $faves.filter(".media--locked").parent().insertBefore($first.parent());
     }
     if (reorder_active) {
-      $faves.not(".locked").insertBefore($first);
+      $faves.not(".media--locked").parent().insertBefore($first.parent());
     }
   }
 
   if ($avoids && $avoids.length) {
     if (reorder_locked) {
       if ($last_active.length) {
-        $avoids.filter(".locked").insertAfter($last_active);
+        $avoids.filter(".media--locked").parent().insertAfter($last_active.parent());
       } else {
-        $avoids.filter(".locked").insertBefore($last);
+        $avoids.filter(".media--locked").parent().insertBefore($last.parent());
       }
     }
     if (reorder_active) {
       if ($last_active.length) {
-        $avoids.not(".locked").insertAfter($last_active);
+        $avoids.not(".media--locked").parent().insertAfter($last_active.parent());
       } else {
-        $avoids.not(".locked").insertBefore($last);
+        $avoids.not(".media--locked").parent().insertBefore($last.parent());
       }
     }
   }
 }
 
 function parseCards() {
-  let $discards = $("#mainContentViaAjax .discard_btn");
 
-  $discards.each(function() {
+  // full-sized cards
+  let $cards = $("#main .hand__card-container, #main .small-card-container");
+
+  $cards.each(function() {
     let match;
-    if (this.dataset.onclick) {
-      match = this.dataset.onclick.match(/eventid=(\d+)/);
+    if (this.dataset.eventId) {
+      match = this.dataset.eventId;
     }
 
     if (match) {
-      const cardId = parseInt(match[1]);
+      const cardId = parseInt(match);
 
-      $(this).next(".card_toggle_button").remove();
+      $(this).children(".card_toggle_button").remove();
 
       if (this.offsetParent === null) { return; } // Fix for Protector extensions
 
-      let $toggle_button = $('<input type="image" class="card_toggle_button" title="Playing Favourites: toggle favourite">');
-      $toggle_button.insertAfter($(this));
+	  let $toggle_button = $('<button class="card_toggle_button" title="Playing Favourites: toggle favourite" />');
+      if ($(this).hasClass('hand__card-container')) {
+	    $(this).append($toggle_button);
+	  } else {
+	    $(this).find('.buttons').append($toggle_button);
+	  }
 
       $toggle_button.attr("data-card-id", cardId);
-      $(this).attr("data-card-id", cardId);
 
       $toggle_button.click(cardToggle);
 
-      if (card_discards.has(cardId)) {
-        $(this).addClass("card_discard");
-        $(this).removeClass("card_protect");
-        $toggle_button.attr("src", chrome.runtime.getURL("img/card_discard.png"));
-      } else if (card_protects.has(cardId)) {
-        $(this).removeClass("card_discard");
-        $(this).addClass("card_protect");
-        $toggle_button.attr("src", chrome.runtime.getURL("img/card_protect.png"));
+	  let $card_play = $(this).find('.hand__card, .small-card-container .buttons .button--primary');
+	  let $card_discard = $(this).find('.card__discard-button, .buttonlet-delete');
+
+      if (card_avoids.has(cardId)) {
+        $(this).removeClass("card_fave");
+        $(this).addClass("card_avoid");
+		$card_play.removeClass('button_fave');
+		$card_play.addClass('button_avoid');
+		$card_discard.addClass('button_fave');
+		$card_discard.removeClass('button_avoid');
+      } else if (card_faves.has(cardId)) {
+        $(this).addClass("card_fave");
+        $(this).removeClass("card_avoid");
+		$card_play.addClass('button_fave');
+		$card_play.removeClass('button_avoid');
+		$card_discard.removeClass('button_fave');
+		$card_discard.addClass('button_avoid');
       } else {
-        $(this).removeClass("card_discard");
-        $(this).removeClass("card_protect");
-        $toggle_button.attr("src", chrome.runtime.getURL("img/card_empty.png"));
+        $(this).removeClass("card_fave");
+        $(this).removeClass("card_avoid");
+		$card_play.removeClass('button_fave');
+		$card_play.removeClass('button_avoid');
+		$card_discard.removeClass('button_fave');
+		$card_discard.removeClass('button_avoid');
       }
     }
   });
@@ -277,31 +306,25 @@ function loadData(callback) {
       branch_avoids = unpackSet(data, "branch_avoids");
       storylet_faves = unpackSet(data, "storylet_faves");
       storylet_avoids = unpackSet(data, "storylet_avoids");
-      card_protects = unpackSet(data, "card_protects");
-      card_discards = unpackSet(data, "card_discards");
+      card_faves = unpackSet(data, "card_faves");
+      card_avoids = unpackSet(data, "card_avoids");
 
       options.branch_reorder_mode = data.branch_reorder_mode;
       options.switch_mode = data.switch_mode;
-      options.protectInterval = 2000; // DUMMY
+      options.protectInterval = 2000; // TODO: Make configurable
 
-      initializeProtector();
+      // initializeProtector(); // TODO: Finish implementation
 
       if (callback) { callback(); }
     }
   );
 }
 
-function restoreLabelCallback(element) {
-  return function() {
-    element.value = element.dataset.originalValue;
-  };
-}
-
 function protectAvoids(e) {
   if (e.metaKey || e.ctrlKey) { return; } // Ctrl-click always bypasses protection
 
-  // If clicked on branch selection OR card discard that's red
-  if ($(e.target).is(".storylet_avoid input[type=submit].standard_btn, .card_protect")) {
+  // If clicked on branch selection OR button set to avoid
+  if ($(e.target).is(".storylet_avoid .button--go span, .button_avoid")) {
     let time = Date.now();
     if (
       !e.target.dataset.protectTimestamp ||
@@ -311,17 +334,24 @@ function protectAvoids(e) {
       e.stopImmediatePropagation();
       e.preventDefault();
 
-      console.log("Protected!");
-      e.target.value = ($(e.target).is(".card_protect")) ? "  SURE?  " : "Sure?";
+	  let $confirmText = $('<span class="protect-confirm">SURE?</span>');
+	  $(e.target).append($confirmText);
+	  $(e.target).addClass('button-protected');
+      setTimeout(
+		function() { 
+		  $(e.target).removeClass('button-protected');
+		  $confirmText.remove(); 
+		}, 
+		options.protectInterval);
+
       e.target.dataset.protectTimestamp = time;
-      setTimeout(restoreLabelCallback(e.target), options.protectInterval);
     }
   }
 }
 
 function initializeProtector() {
   // Intercept clicks to avoided elements
-  document.getElementById("mainContentViaAjax").addEventListener(
+  document.getElementById("main").addEventListener(
     "click",
     protectAvoids,
     true // Capture before it reaches inline onclick
@@ -405,26 +435,26 @@ function cardToggle(e) {
     case "modifier_click":
       const modifier = (e.metaKey || e.ctrlKey);
       if (modifier) {
-        if (card_protects.has(cardId)) {
+        if (card_avoids.has(cardId)) {
           setCardFave(cardId, "none");
         } else {
-          setCardFave(cardId, "protect");
+          setCardFave(cardId, "avoid");
         }
       } else {
-        if (card_discards.has(cardId)) {
+        if (card_faves.has(cardId)) {
           setCardFave(cardId, "none");
         } else {
-          setCardFave(cardId, "discard");
+          setCardFave(cardId, "fave");
         }
       }
       break;
     case "click_through":
-      if (card_discards.has(cardId)) {
-        setCardFave(cardId, "protect");
-      } else if (card_protects.has(cardId)) {
+      if (card_avoids.has(cardId)) {
         setCardFave(cardId, "none");
+      } else if (card_faves.has(cardId)) {
+        setCardFave(cardId, "avoid");
       } else {
-        setCardFave(cardId, "discard");
+        setCardFave(cardId, "fave");
       }
       break;
   }
@@ -437,8 +467,8 @@ function saveFaves(callback) {
   Object.assign(data, branch_avoids.pack("branch_avoids"));
   Object.assign(data, storylet_faves.pack("storylet_faves"));
   Object.assign(data, storylet_avoids.pack("storylet_avoids"));
-  Object.assign(data, card_protects.pack("card_protects"));
-  Object.assign(data, card_discards.pack("card_discards"));
+  Object.assign(data, card_faves.pack("card_faves"));
+  Object.assign(data, card_avoids.pack("card_avoids"));
 
   chrome.storage.local.set(data, function() {
     if (callback) { callback(); }
@@ -484,16 +514,16 @@ function setStoryletFave(storyletId, mode) {
 function setCardFave(cardId, mode) {
   switch (mode) {
     case "none":
-      card_discards.delete(cardId);
-      card_protects.delete(cardId);
+      card_avoids.delete(cardId);
+      card_faves.delete(cardId);
       break;
-    case "protect":
-      card_discards.delete(cardId);
-      card_protects.add(cardId);
+    case "fave":
+      card_avoids.delete(cardId);
+      card_faves.add(cardId);
       break;
-    case "discard":
-      card_discards.add(cardId);
-      card_protects.delete(cardId);
+    case "avoid":
+      card_avoids.add(cardId);
+      card_faves.delete(cardId);
       break;
   }
   saveFaves(parseCards);

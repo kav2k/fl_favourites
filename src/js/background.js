@@ -24,7 +24,7 @@ function reinjectContentScripts() {
     "/js/content.js"
   ];
 
-  chrome.tabs.query({url: "*://fallenlondon.storynexus.com/Gap/Load*"}, function(tabs) {
+  chrome.tabs.query({url: "*://*.fallenlondon.com/*"}, function(tabs) {
     if (chrome.runtime.lastError) {
       // Assume Firefox (does not allow query with URL)
       return; // Do nothing: FF reinjects content scripts on load anyway
