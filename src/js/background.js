@@ -34,11 +34,17 @@ if (chrome.runtime.onInstalled) {
 }
 
 function init() {
-  const storage = chrome.storage.sync || chrome.storage.local;
+  function copyAndContinue() {
+    chrome.storage.sync.get(null, (data) => {
+      chrome.storage.local.set(data, () => {
+        reinjectContentScripts();
+      });
+    });
+  }
 
   migrate(
-    storage,
-    reinjectContentScripts,
+    chrome.storage.sync,
+    copyAndContinue,
     reinjectContentScripts // Try to continue with local data
   );
 }
