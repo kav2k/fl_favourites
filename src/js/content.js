@@ -45,14 +45,14 @@ async function registerObserver() {
   if (observer) observer.disconnect();
   observer = new MutationSummary({
     rootNode: document.getElementById("main"),
-    callback: async function(summaries) {
-      await fillClickHandlers();
+    callback: function(summaries) {
+      fillClickHandlers();
       parseStorylets(true);
       parseCards();
     },
-    queries: [{element: ".storylet"}, {element: ".media--branch"}, {element: ".hand__card-container"}, {element: ".small-card-container"}] 
+    queries: [{ attribute: "data-branch-id" }, { attribute: "data-card-id" }, { attribute: "disabled"}] 
   });
-  await fillClickHandlers();
+  fillClickHandlers();
   parseStorylets(true);
   parseCards();
 }
@@ -75,24 +75,7 @@ function pageInject(func) {
 }
 
 // Make inline click/submit handlers visible to the isolated world
-async function fillClickHandlers() {
-  let injected = function() {
-    // Note: This executes in another context!
-    // Note: This assumes jQuery in the other context!
-    $("[onclick]").each(function() {
-      if (!this.dataset.onclick) {
-        this.dataset.onclick = this.attributes.onclick.value;
-      }
-    });
-    $("[onsubmit]").each(function() {
-      if (!this.dataset.onsubmit) {
-        this.dataset.onsubmit = this.attributes.onsubmit.value;
-      }
-    });
-  };
-
-  pageInject(injected);
-
+function fillClickHandlers() {
   // Record original button labels
   $(".storylet .button--go, .card__discard-button").each(function() {
     if (!this.dataset.originalValue) {
@@ -131,7 +114,7 @@ function parseStorylets(reorder = false) { // Call without options to ensure no 
 
   if ($branches.length) {
     $branches.each(function() {
-      let match = $(this).data("branch-id");
+      let match = this.dataset.branchId;
       if (match) {
         const branchId = parseInt(match);
         const active = $(this).hasClass("media--locked");
@@ -179,7 +162,7 @@ function parseStorylets(reorder = false) { // Call without options to ensure no 
     $avoids = $branches.filter(".storylet_avoid");
   } else if ($storylets.length) {
     $storylets.each(function() {
-      let match = $(this).parent().data("branch-id");
+      let match = $(this).parent().get(0).dataset.branchId;
 
       if (match) {
         const storyletId = parseInt(match);
