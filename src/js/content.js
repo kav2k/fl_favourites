@@ -12,31 +12,31 @@ var observer;
 const version = chrome.runtime.getManifest().version;
 
 async function init() {
-chrome.storage.onChanged.addListener(onStorageChange);
+  chrome.storage.onChanged.addListener(onStorageChange);
 
   const event = new CustomEvent("PlayingFavouritesLoad");
-window.dispatchEvent(event);
+  window.dispatchEvent(event);
+  
+  window.addEventListener("PlayingFavouritesLoad", suicide, false);
 
-window.addEventListener("PlayingFavouritesLoad", suicide, false);
-
-console.log(`Playing Favourites ${version} injected`);
-
-var wrapObserver = new MutationSummary({
-  rootNode: document.getElementById("root"),
+  console.log(`Playing Favourites ${version} injected`);
+  
+  var wrapObserver = new MutationSummary({
+    rootNode: document.getElementById("root"),
     callback: async function(summaries) {
-    if (summaries[0].added.length === 1) {
+      if (summaries[0].added.length === 1) {
         await loadData()
         await registerObserver();
-    }
-  },
-  queries: [{element: "#main"}]
-});
-
-// True in case of reinject
-if (document.getElementById("main")) {
+      }
+    },
+    queries: [{element: "#main"}]
+  });
+  
+  // True in case of reinject
+  if (document.getElementById("main")) {
     await loadData()
     await registerObserver();
-}
+  }
 }
 
 init();
@@ -47,14 +47,14 @@ async function registerObserver() {
     rootNode: document.getElementById("main"),
     callback: async function(summaries) {
       await fillClickHandlers();
-        parseStorylets(true);
-        parseCards();
+      parseStorylets(true);
+      parseCards();
     },
     queries: [{element: ".storylet"}, {element: ".media--branch"}, {element: ".hand__card-container"}, {element: ".small-card-container"}] 
   });
   await fillClickHandlers();
-    parseStorylets(true);
-    parseCards();
+  parseStorylets(true);
+  parseCards();
 }
 
 // Gracefully shut down orphaned instance
@@ -162,9 +162,18 @@ function parseStorylets(reorder = false) { // Call without options to ensure no 
       }
     });
 
-    $first = $branches.first();
-    $last_active = $branches.not(".media--locked").last();
-    $last = $branches.last();
+    $branches.first().parent().before('<div class="first_reorder_marker">');
+    $first = $(".first_reorder_marker");
+
+    $branches.last().parent().after('<div class="last_reorder_marker">');
+    $last = $(".last_reorder_marker");
+
+    if ($branches.not(".media--locked").last().length) {
+      $branches.not(".media--locked").last().parent().after('<div class="last_active_reorder_marker">');
+      $last_active = $(".last_active_reorder_marker");
+    } else {
+      $last_active = $last;
+    }
 
     $faves = $branches.filter(".storylet_favourite");
     $avoids = $branches.filter(".storylet_avoid");
@@ -202,9 +211,18 @@ function parseStorylets(reorder = false) { // Call without options to ensure no 
       }
     });
 
-    $first = $storylets.first();
-    $last_active = $storylets.not(".media--locked").last();
-    $last = $storylets.last();
+    $storylets.first().parent().before('<div class="first_reorder_marker">');
+    $first = $(".first_reorder_marker");
+
+    $storylets.last().parent().after('<div class="last_reorder_marker">');
+    $last = $(".last_reorder_marker");
+
+    if ($storylets.not(".media--locked").last().length) {
+      $storylets.not(".media--locked").last().parent().after('<div class="last_active_reorder_marker">');
+      $last_active = $(".last_active_reorder_marker");
+    } else {
+      $last_active = $last;
+    }
 
     $faves = $storylets.filter(".storylet_favourite");
     $avoids = $storylets.filter(".storylet_avoid");
@@ -212,29 +230,23 @@ function parseStorylets(reorder = false) { // Call without options to ensure no 
 
   if ($faves && $faves.length) {
     if (reorder_locked) {
-      $faves.filter(".media--locked").parent().insertBefore($first.parent());
+      $faves.filter(".media--locked").parent().insertBefore($first);
     }
     if (reorder_active) {
-      $faves.not(".media--locked").parent().insertBefore($first.parent());
+      $faves.not(".media--locked").parent().insertBefore($first);
     }
   }
 
   if ($avoids && $avoids.length) {
     if (reorder_locked) {
-      if ($last_active.length) {
-        $avoids.filter(".media--locked").parent().insertAfter($last_active.parent());
-      } else {
-        $avoids.filter(".media--locked").parent().insertBefore($last.parent());
-      }
+      $avoids.filter(".media--locked").parent().insertAfter($last_active);
     }
     if (reorder_active) {
-      if ($last_active.length) {
-        $avoids.not(".media--locked").parent().insertAfter($last_active.parent());
-      } else {
-        $avoids.not(".media--locked").parent().insertBefore($last.parent());
-      }
+      $avoids.not(".media--locked").parent().insertAfter($last_active);
     }
   }
+
+  $(".first_reorder_marker, .last_active_reorder_marker, .last_reorder_marker").remove();
 }
 
 function parseCards() {
@@ -299,18 +311,18 @@ async function onStorageChange(changes, area) {
 async function loadData() {
   data = await getOptions();
 
-      branch_faves = unpackSet(data, "branch_faves");
-      branch_avoids = unpackSet(data, "branch_avoids");
-      storylet_faves = unpackSet(data, "storylet_faves");
-      storylet_avoids = unpackSet(data, "storylet_avoids");
-      card_faves = unpackSet(data, "card_faves");
-      card_avoids = unpackSet(data, "card_avoids");
+  branch_faves = unpackSet(data, "branch_faves");
+  branch_avoids = unpackSet(data, "branch_avoids");
+  storylet_faves = unpackSet(data, "storylet_faves");
+  storylet_avoids = unpackSet(data, "storylet_avoids");
+  card_faves = unpackSet(data, "card_faves");
+  card_avoids = unpackSet(data, "card_avoids");
 
-      options.branch_reorder_mode = data.branch_reorder_mode;
-      options.switch_mode = data.switch_mode;
-      options.protectInterval = 2000; // TODO: Make configurable
+  options.branch_reorder_mode = data.branch_reorder_mode;
+  options.switch_mode = data.switch_mode;
+  options.protectInterval = 2000; // TODO: Make configurable
 
-      // initializeProtector(); // TODO: Finish implementation
+  // initializeProtector(); // TODO: Finish implementation
 }
 
 function protectAvoids(e) {
