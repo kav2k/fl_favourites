@@ -21,7 +21,7 @@ async function init() {
 
   console.log(`Playing Favourites ${version} injected`);
   
-  var wrapObserver = new MutationSummary({
+  wrapObserver = new MutationSummary({
     rootNode: document.getElementById("root"),
     callback: async function(summaries) {
       if (summaries[0].added.length === 1) {
@@ -126,7 +126,7 @@ function parseStorylets(reorder = false) { // Call without options to ensure no 
         let $toggle_button = $('<input type="image" class="fave_toggle_button" title="Playing Favourites: toggle favourite">');
         $toggle_button.insertAfter($(this).find(".button--go").last()); // In case of insufficient actions, there are 2 buttons
         $toggle_button.attr("data-active", active);
-        $toggle_button.attr("data-branch-id", branchId);
+        $toggle_button.attr("data-toggle-id", branchId);
         $toggle_button.click(branchToggle);
 
         if (branch_faves.has(branchId)) {
@@ -175,7 +175,7 @@ function parseStorylets(reorder = false) { // Call without options to ensure no 
         let $toggle_button = $('<input type="image" class="fave_toggle_button" title="Playing Favourites: toggle favourite">');
         $toggle_button.insertAfter($(this).find(".button--go"));
         $toggle_button.attr("data-active", active);
-        $toggle_button.attr("data-storylet-id", storyletId);
+        $toggle_button.attr("data-toggle-id", storyletId);
         $toggle_button.click(storyletToggle);
 
         if (storylet_faves.has(storyletId)) {
@@ -257,7 +257,7 @@ function parseCards() {
         $(this).find('.buttons').append($toggle_button);
       }
 
-      $toggle_button.attr("data-card-id", cardId);
+      $toggle_button.attr("data-toggle-id", cardId);
 
       $toggle_button.click(cardToggle);
 
@@ -350,7 +350,7 @@ function initializeProtector() {
 async function branchToggle(e) {
   e.preventDefault();
 
-  const branchId = parseInt(this.dataset.branchId);
+  const branchId = parseInt(this.dataset.toggleId);
 
   switch (options.switch_mode) {
     case "modifier_click":
@@ -384,7 +384,7 @@ async function branchToggle(e) {
 function storyletToggle(e) {
   e.preventDefault();
 
-  const storyletId = parseInt(this.dataset.storyletId);
+  const storyletId = parseInt(this.dataset.toggleId);
 
   switch (options.switch_mode) {
     case "modifier_click":
@@ -418,7 +418,7 @@ function storyletToggle(e) {
 function cardToggle(e) {
   e.preventDefault();
 
-  const cardId = parseInt(this.dataset.cardId);
+  const cardId = parseInt(this.dataset.toggleId);
 
   switch (options.switch_mode) {
     case "modifier_click":
