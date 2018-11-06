@@ -141,7 +141,7 @@ function parseStorylets(reorder = false) { // Call without options to ensure no 
         if ($(this).find(".button--go").prop("offsetParent") === null) { return; } // Fix for Protector extensions
 
         let $toggle_button = $('<input type="image" class="fave_toggle_button" title="Playing Favourites: toggle favourite">');
-        $toggle_button.insertAfter($(this).find(".button--go"));
+        $toggle_button.insertAfter($(this).find(".button--go").last()); // In case of insufficient actions, there are 2 buttons
         $toggle_button.attr("data-active", active);
         $toggle_button.attr("data-branch-id", branchId);
         $toggle_button.click(branchToggle);
