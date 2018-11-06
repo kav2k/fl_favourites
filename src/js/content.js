@@ -41,10 +41,10 @@ function registerObserver() {
   observer = new MutationSummary({
     rootNode: document.getElementById("main"),
     callback: function(summaries) {
-	  fillClickHandlers(function() {
-	    parseStorylets(true);
-	    parseCards();
-	  });
+      fillClickHandlers(function() {
+        parseStorylets(true);
+        parseCards();
+      });
     },
     queries: [{element: ".storylet"}, {element: ".media--branch"}, {element: ".hand__card-container"}, {element: ".small-card-container"}] 
   });
@@ -254,41 +254,41 @@ function parseCards() {
 
       if (this.offsetParent === null) { return; } // Fix for Protector extensions
 
-	  let $toggle_button = $('<button class="card_toggle_button" title="Playing Favourites: toggle favourite" />');
-      if ($(this).hasClass('hand__card-container')) {
-	    $(this).append($toggle_button);
-	  } else {
-	    $(this).find('.buttons').append($toggle_button);
-	  }
+      let $toggle_button = $('<button class="card_toggle_button" title="Playing Favourites: toggle favourite" />');
+        if ($(this).hasClass('hand__card-container')) {
+        $(this).append($toggle_button);
+      } else {
+        $(this).find('.buttons').append($toggle_button);
+      }
 
       $toggle_button.attr("data-card-id", cardId);
 
       $toggle_button.click(cardToggle);
 
-	  let $card_play = $(this).find('.hand__card, .small-card-container .buttons .button--primary');
-	  let $card_discard = $(this).find('.card__discard-button, .buttonlet-delete');
+      let $card_play = $(this).find('.hand__card, .small-card-container .buttons .button--primary');
+      let $card_discard = $(this).find('.card__discard-button, .buttonlet-delete');
 
       if (card_avoids.has(cardId)) {
         $(this).removeClass("card_fave");
         $(this).addClass("card_avoid");
-		$card_play.removeClass('button_fave');
-		$card_play.addClass('button_avoid');
-		$card_discard.addClass('button_fave');
-		$card_discard.removeClass('button_avoid');
+        $card_play.removeClass('button_fave');
+        $card_play.addClass('button_avoid');
+        $card_discard.addClass('button_fave');
+        $card_discard.removeClass('button_avoid');
       } else if (card_faves.has(cardId)) {
         $(this).addClass("card_fave");
         $(this).removeClass("card_avoid");
-		$card_play.addClass('button_fave');
-		$card_play.removeClass('button_avoid');
-		$card_discard.removeClass('button_fave');
-		$card_discard.addClass('button_avoid');
+        $card_play.addClass('button_fave');
+        $card_play.removeClass('button_avoid');
+        $card_discard.removeClass('button_fave');
+        $card_discard.addClass('button_avoid');
       } else {
         $(this).removeClass("card_fave");
         $(this).removeClass("card_avoid");
-		$card_play.removeClass('button_fave');
-		$card_play.removeClass('button_avoid');
-		$card_discard.removeClass('button_fave');
-		$card_discard.removeClass('button_avoid');
+        $card_play.removeClass('button_fave');
+        $card_play.removeClass('button_avoid');
+        $card_discard.removeClass('button_fave');
+        $card_discard.removeClass('button_avoid');
       }
     }
   });
@@ -334,15 +334,16 @@ function protectAvoids(e) {
       e.stopImmediatePropagation();
       e.preventDefault();
 
-	  let $confirmText = $('<span class="protect-confirm">SURE?</span>');
-	  $(e.target).append($confirmText);
-	  $(e.target).addClass('button-protected');
+      let $confirmText = $('<span class="protect-confirm">SURE?</span>');
+      $(e.target).append($confirmText);
+      $(e.target).addClass('button-protected');
       setTimeout(
-		function() { 
-		  $(e.target).removeClass('button-protected');
-		  $confirmText.remove(); 
-		}, 
-		options.protectInterval);
+        function() { 
+          $(e.target).removeClass('button-protected');
+          $confirmText.remove(); 
+        }, 
+        options.protectInterval
+      );
 
       e.target.dataset.protectTimestamp = time;
     }
