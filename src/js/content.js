@@ -266,28 +266,21 @@ function parseCards() {
 
       $toggle_button.click(cardToggle);
 
-      let $card_play = $(this).find('.hand__card, .small-card-container .buttons .button--primary');
       let $card_discard = $(this).find('.card__discard-button, .buttonlet-delete');
 
       if (card_avoids.has(cardId)) {
         $(this).removeClass("card_fave");
         $(this).addClass("card_avoid");
-        $card_play.removeClass('button_fave');
-        $card_play.addClass('button_avoid');
         $card_discard.addClass('button_fave');
         $card_discard.removeClass('button_avoid');
       } else if (card_faves.has(cardId)) {
         $(this).addClass("card_fave");
         $(this).removeClass("card_avoid");
-        $card_play.addClass('button_fave');
-        $card_play.removeClass('button_avoid');
         $card_discard.removeClass('button_fave');
         $card_discard.addClass('button_avoid');
       } else {
         $(this).removeClass("card_fave");
         $(this).removeClass("card_avoid");
-        $card_play.removeClass('button_fave');
-        $card_play.removeClass('button_avoid');
         $card_discard.removeClass('button_fave');
         $card_discard.removeClass('button_avoid');
       }

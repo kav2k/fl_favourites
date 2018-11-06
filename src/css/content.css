@@ -68,12 +68,14 @@
 }
 
 #main .button_fave, 
-#main .button_fave:hover {
+#main .button_fave:hover,
+#main .card_fave .hand__card {
   outline: 1px solid lime;
 }
 
 #main .button_avoid, 
-#main .button_avoid:hover {
+#main .button_avoid:hover,
+#main .card_avoid .hand__card {
   outline: 1px solid red;
 }
 
