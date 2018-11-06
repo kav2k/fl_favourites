@@ -1,6 +1,10 @@
 Version 0.4.0
 
 * Updated to work with Fallen London's new UI (by Trevor Loflin / Alexander Kashev)
+* Fixed random reordering of storylets when discarding / drawing cards (by Alexander Kashev)
+* Hopefully stopped sync-installed copies of extension from clobbering sync storage (by Alexander Kashev)
+
+(Previous changes by Alexander Kashev)
 
 Version 0.3.1
 
