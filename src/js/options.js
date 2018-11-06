@@ -1,26 +1,20 @@
 $(document).ready(function() {
-  $("input[type=radio]").each(function() {
+  $("input[type=radio]").each(async function() {
     let el = this;
-    chrome.storage.local.get(el.name, function(data) {
-      el.checked = (data[el.name] === el.value);
-    });
-  }).change(function() {
-    let data = {};
+    let value = await getOption(el.name);
+    el.checked = (value === el.value);
+  }).change(async function() {
     if (this.checked) {
-      data[this.name] = this.value;
+      await setOption(this.name, this.value);
     }
-    chrome.storage.local.set(data);
   });
 
-  $("input[type=checkbox]").each(function() {
+  $("input[type=checkbox]").each(async function() {
     let el = this;
-    chrome.storage.local.get(el.value, function(data) {
-      el.checked = data[el.value];
-    });
-  }).change(function() {
-    let data = {};
-    data[this.value] = this.checked;
-    chrome.storage.local.set(data);
+    let checked = await getOption(el.value);
+    el.checked = checked;
+  }).change(async function() {
+    await setOption(this.value, this.checked);
   });
 
   $.ajax("/changelog.txt", {dataType: "text"}).done(function(text) {

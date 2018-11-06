@@ -6,22 +6,27 @@ var card_faves = new Set();
 var card_avoids = new Set();
 var options = {};
 
+var wrapObserver;
+var observer;
 
+const version = chrome.runtime.getManifest().version;
+
+async function init() {
 chrome.storage.onChanged.addListener(onStorageChange);
 
-var event = new CustomEvent("PlayingFavouritesLoad");
+  const event = new CustomEvent("PlayingFavouritesLoad");
 window.dispatchEvent(event);
 
 window.addEventListener("PlayingFavouritesLoad", suicide, false);
 
-var version = chrome.runtime.getManifest().version;
 console.log(`Playing Favourites ${version} injected`);
 
 var wrapObserver = new MutationSummary({
   rootNode: document.getElementById("root"),
-  callback: function(summaries) {
+    callback: async function(summaries) {
     if (summaries[0].added.length === 1) {
-      loadData(registerObserver);
+        await loadData()
+        await registerObserver();
     }
   },
   queries: [{element: "#main"}]
@@ -29,29 +34,27 @@ var wrapObserver = new MutationSummary({
 
 // True in case of reinject
 if (document.getElementById("main")) {
-  loadData(registerObserver);
+    await loadData()
+    await registerObserver();
+}
 }
 
-// -----------------
+init();
 
-var observer;
-
-function registerObserver() {
+async function registerObserver() {
   if (observer) observer.disconnect();
   observer = new MutationSummary({
     rootNode: document.getElementById("main"),
-    callback: function(summaries) {
-      fillClickHandlers(function() {
+    callback: async function(summaries) {
+      await fillClickHandlers();
         parseStorylets(true);
         parseCards();
-      });
     },
     queries: [{element: ".storylet"}, {element: ".media--branch"}, {element: ".hand__card-container"}, {element: ".small-card-container"}] 
   });
-  fillClickHandlers(function() {
+  await fillClickHandlers();
     parseStorylets(true);
     parseCards();
-  });
 }
 
 // Gracefully shut down orphaned instance
@@ -72,7 +75,7 @@ function pageInject(func) {
 }
 
 // Make inline click/submit handlers visible to the isolated world
-function fillClickHandlers(callback) {
+async function fillClickHandlers() {
   let injected = function() {
     // Note: This executes in another context!
     // Note: This assumes jQuery in the other context!
@@ -96,8 +99,6 @@ function fillClickHandlers(callback) {
       this.dataset.originalValue = this.value;
     }
   });
-
-  callback();
 }
 
 function parseStorylets(reorder = false) { // Call without options to ensure no reordering
@@ -294,14 +295,17 @@ function parseCards() {
   });
 }
 
-function onStorageChange(changes, area) {
-  if (area === "local") { loadData(parseStorylets); }
+async function onStorageChange(changes, area) {
+  if (area === "local") { 
+    await loadData();
+    parseStorylets();
+    parseCards();
+  }
 }
 
-function loadData(callback) {
-  chrome.storage.local.get(
-    null,
-    function(data) {
+async function loadData() {
+  data = await getOptions();
+
       branch_faves = unpackSet(data, "branch_faves");
       branch_avoids = unpackSet(data, "branch_avoids");
       storylet_faves = unpackSet(data, "storylet_faves");
@@ -314,10 +318,6 @@ function loadData(callback) {
       options.protectInterval = 2000; // TODO: Make configurable
 
       // initializeProtector(); // TODO: Finish implementation
-
-      if (callback) { callback(); }
-    }
-  );
 }
 
 function protectAvoids(e) {
@@ -359,7 +359,7 @@ function initializeProtector() {
   );
 }
 
-function branchToggle(e) {
+async function branchToggle(e) {
   e.preventDefault();
 
   const branchId = parseInt(this.dataset.branchId);
@@ -369,25 +369,25 @@ function branchToggle(e) {
       const modifier = (e.metaKey || e.ctrlKey);
       if (modifier) {
         if (branch_avoids.has(branchId)) {
-          setBranchFave(branchId, "none");
+          await setBranchFave(branchId, "none");
         } else {
-          setBranchFave(branchId, "avoid");
+          await setBranchFave(branchId, "avoid");
         }
       } else {
         if (branch_faves.has(branchId)) {
-          setBranchFave(branchId, "none");
+          await setBranchFave(branchId, "none");
         } else {
-          setBranchFave(branchId, "fave");
+          await setBranchFave(branchId, "fave");
         }
       }
       break;
     case "click_through":
       if (branch_faves.has(branchId)) {
-        setBranchFave(branchId, "avoid");
+        await setBranchFave(branchId, "avoid");
       } else if (branch_avoids.has(branchId)) {
-        setBranchFave(branchId, "none");
+        await setBranchFave(branchId, "none");
       } else {
-        setBranchFave(branchId, "fave");
+        await setBranchFave(branchId, "fave");
       }
       break;
   }
@@ -461,7 +461,7 @@ function cardToggle(e) {
   }
 }
 
-function saveFaves(callback) {
+async function saveFaves() {
   let data = {};
 
   Object.assign(data, branch_faves.pack("branch_faves"));
@@ -471,12 +471,10 @@ function saveFaves(callback) {
   Object.assign(data, card_faves.pack("card_faves"));
   Object.assign(data, card_avoids.pack("card_avoids"));
 
-  chrome.storage.local.set(data, function() {
-    if (callback) { callback(); }
-  });
+  await setOptions(data);
 }
 
-function setBranchFave(branchId, mode) {
+async function setBranchFave(branchId, mode) {
   switch (mode) {
     case "none":
       branch_faves.delete(branchId);
@@ -491,10 +489,11 @@ function setBranchFave(branchId, mode) {
       branch_avoids.delete(branchId);
       break;
   }
-  saveFaves(parseStorylets);
+  await saveFaves();
+  parseStorylets();
 }
 
-function setStoryletFave(storyletId, mode) {
+async function setStoryletFave(storyletId, mode) {
   switch (mode) {
     case "none":
       storylet_faves.delete(storyletId);
@@ -509,10 +508,11 @@ function setStoryletFave(storyletId, mode) {
       storylet_avoids.delete(storyletId);
       break;
   }
-  saveFaves(parseStorylets);
+  await saveFaves();
+  parseStorylets();
 }
 
-function setCardFave(cardId, mode) {
+async function setCardFave(cardId, mode) {
   switch (mode) {
     case "none":
       card_avoids.delete(cardId);
@@ -527,5 +527,6 @@ function setCardFave(cardId, mode) {
       card_faves.delete(cardId);
       break;
   }
-  saveFaves(parseCards);
+  await saveFaves();
+  parseCards();
 }

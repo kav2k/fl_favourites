@@ -1,17 +1,3 @@
-var default_options = {
-  branch_reorder_mode: "branch_reorder_active",
-  switch_mode: "click_through",
-
-  branch_faves_keys: [],
-  branch_avoids_keys: [],
-  storylet_faves_keys: [],
-  storylet_avoids_keys: [],
-  card_protects_keys: [],
-  card_discards_keys: [],
-
-  storage_schema: 2
-};
-
 // Inject into open tabs on launch
 function reinjectContentScripts() {
   let stylesheets = [
@@ -20,7 +6,7 @@ function reinjectContentScripts() {
   let contentScripts = [
     "/js/lib/jquery.js",
     "/js/lib/mutation-summary.js",
-    "/js/set_pack.js",
+    "/js/storage.js",
     "/js/content.js"
   ];
 
@@ -87,7 +73,8 @@ function migrate(storage, callback = noop, errorCallback = noop) {
         });
         break;
       case default_options.storage_schema: // Expected; we're at current version
-        storage.set(data, callback);
+        // storage.set(data, callback); // No migration needed; all consumers see default values
+        callback();
         break;
       default: // Unknown version - probably synced from newer one
         console.error(`Unknown data storage schema (got ${data.storage_schema}, expected ${default_options.storage_schema})`);
